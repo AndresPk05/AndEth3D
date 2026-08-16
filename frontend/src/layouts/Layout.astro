@@ -1,0 +1,183 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "AndEth3D — Impresión 3D personalizada. Convertimos tus ideas en objetos reales." } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? "http://localhost:4321");
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={`${title} | AndEth3D`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content="/logo.png" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <title>{title} | AndEth3D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="grain min-h-screen flex flex-col text-ink antialiased">
+    <a href="#contenido" class="skip-link">Saltar al contenido</a>
+
+    <header class="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-brand-100">
+      <nav class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4" aria-label="Principal">
+        <a href="/" class="flex items-center gap-3 shrink-0">
+          <span class="block w-10 h-10 rounded-xl overflow-hidden bg-ink shadow-md shadow-brand-200">
+            <img src="/logo.png" alt="AndEth3D" class="w-full h-full object-cover" />
+          </span>
+          <span class="font-display font-bold text-lg tracking-tight">
+            AndEth<span class="text-brand-600">3D</span>
+          </span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-1 text-sm font-medium" id="main-nav">
+          <a href="/" data-nav="/" class="px-3 py-2 rounded-lg hover:bg-brand-50 hover:text-brand-700 transition">Inicio</a>
+          <a href="/galeria" data-nav="/galeria" class="px-3 py-2 rounded-lg hover:bg-brand-50 hover:text-brand-700 transition">Galería</a>
+          <a href="/cotizar" data-nav="/cotizar" class="px-3 py-2 rounded-lg hover:bg-brand-50 hover:text-brand-700 transition">Cotizar</a>
+          <a href="/pedidos" data-nav="/pedidos" class="px-3 py-2 rounded-lg hover:bg-brand-50 hover:text-brand-700 transition" data-auth-only hidden>Mis pedidos</a>
+          <a href="/admin/pedidos" data-nav="/admin" class="px-3 py-2 rounded-lg hover:bg-brand-50 hover:text-brand-700 transition" data-admin-only hidden>Panel admin</a>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a
+            href="/login"
+            data-guest-only
+            class="text-sm font-medium px-4 py-2 rounded-full border border-brand-200 text-brand-700 hover:bg-brand-50 transition"
+            >Entrar</a
+          >
+          <a
+            href="/cotizar"
+            class="text-sm font-semibold px-4 py-2 rounded-full bg-brand-600 text-white hover:bg-brand-700 hover:-translate-y-px active:translate-y-0 active:scale-[0.98] shadow-md shadow-brand-300/50 transition"
+            >Cotiza tu idea</a
+          >
+          <div data-auth-only hidden class="relative">
+            <button
+              id="user-menu-btn"
+              class="w-9 h-9 rounded-xl bg-brand-100 text-brand-700 font-bold text-sm flex items-center justify-center hover:bg-brand-200 transition"
+              aria-label="Menú de usuario"></button>
+            <div
+              id="user-menu"
+              class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg shadow-brand-200/60 border border-brand-100 p-2 text-sm">
+              <p id="user-name" class="px-3 py-2 font-semibold truncate"></p>
+              <a href="/pedidos" class="block px-3 py-2 rounded-lg hover:bg-brand-50">Mis pedidos</a>
+              <button id="logout-btn" class="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 text-red-600">
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main id="contenido" class="flex-1">
+      <slot />
+    </main>
+
+    <footer class="bg-ink text-brand-100 mt-24">
+      <div class="max-w-6xl mx-auto px-4 py-14 grid gap-10 md:grid-cols-3">
+        <div>
+          <div class="flex items-center gap-3 mb-3">
+            <span class="block w-9 h-9 rounded-lg overflow-hidden">
+              <img src="/logo.png" alt="AndEth3D" class="w-full h-full object-cover" />
+            </span>
+            <span class="font-display font-bold text-white">AndEth3D</span>
+          </div>
+          <p class="text-sm text-brand-200/80 max-w-xs">
+            Impresión 3D personalizada: prototipos, figuras, repuestos y regalos únicos.
+          </p>
+        </div>
+        <nav aria-label="Pie de página">
+          <h4 class="font-display font-semibold text-white mb-3">Navegación</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="/galeria" class="hover:text-white transition">Galería</a></li>
+            <li><a href="/cotizar" class="hover:text-white transition">Cotizar</a></li>
+            <li><a href="/pedidos" class="hover:text-white transition">Mis pedidos</a></li>
+          </ul>
+        </nav>
+        <div>
+          <h4 class="font-display font-semibold text-white mb-3">Contacto</h4>
+          <p class="text-sm text-brand-200/80 max-w-xs">
+            Escríbenos desde el <a href="/cotizar" class="underline decoration-brand-400 underline-offset-2 hover:text-white transition">formulario de cotización</a> y te respondemos con el precio.
+          </p>
+        </div>
+      </div>
+      <div class="border-t border-white/10 py-4">
+        <div class="max-w-6xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2 text-xs text-brand-200/60">
+          <span>© {new Date().getFullYear()} AndEth3D</span>
+          <span class="flex gap-4">
+            <a href="/privacidad" class="hover:text-white transition">Privacidad</a>
+            <a href="/terminos" class="hover:text-white transition">Términos</a>
+          </span>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      import { getSession, clearSession } from "../lib/api";
+
+      const session = getSession();
+      document.querySelectorAll<HTMLElement>("[data-auth-only]").forEach((el) => {
+        el.hidden = !session;
+      });
+      document.querySelectorAll<HTMLElement>("[data-guest-only]").forEach((el) => {
+        el.hidden = !!session;
+      });
+      document.querySelectorAll<HTMLElement>("[data-admin-only]").forEach((el) => {
+        el.hidden = session?.user.role !== "Admin";
+      });
+
+      // Marcar enlace activo en la navegación
+      const path = window.location.pathname;
+      document.querySelectorAll<HTMLAnchorElement>("[data-nav]").forEach((link) => {
+        const target = link.dataset.nav!;
+        const active = target === "/" ? path === "/" : path.startsWith(target);
+        if (active) {
+          link.setAttribute("aria-current", "page");
+          link.classList.add("bg-brand-50", "text-brand-700", "font-semibold");
+        }
+      });
+
+      const btn = document.getElementById("user-menu-btn");
+      const menu = document.getElementById("user-menu");
+      if (session && btn && menu) {
+        btn.textContent = session.user.name.charAt(0).toUpperCase();
+        document.getElementById("user-name")!.textContent = session.user.name;
+        btn.addEventListener("click", () => menu.classList.toggle("hidden"));
+        document.addEventListener("click", (e) => {
+          if (!btn.contains(e.target as Node) && !menu.contains(e.target as Node))
+            menu.classList.add("hidden");
+        });
+        document.getElementById("logout-btn")?.addEventListener("click", () => {
+          clearSession();
+          window.location.href = "/";
+        });
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) =>
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          }),
+        { threshold: 0.15 }
+      );
+      document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+    </script>
+  </body>
+</html>

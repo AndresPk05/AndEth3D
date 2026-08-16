@@ -1,0 +1,25 @@
+---
+const tabs = [
+  { href: "/admin/pedidos", label: "Pedidos" },
+  { href: "/admin/cotizaciones", label: "Cotizaciones" },
+  { href: "/admin/galeria", label: "Galería" },
+];
+const current = Astro.url.pathname;
+---
+
+<div class="flex flex-wrap items-center gap-2 mb-8">
+  <span class="font-display font-bold text-brand-700 mr-2">Panel admin</span>
+  {tabs.map((tab) => (
+    <a
+      href={tab.href}
+      class:list={[
+        "px-4 py-2 rounded-full text-sm font-semibold border transition",
+        current === tab.href
+          ? "bg-brand-600 text-white border-brand-600"
+          : "bg-white text-brand-700 border-brand-200 hover:bg-brand-50",
+      ]}
+    >
+      {tab.label}
+    </a>
+  ))}
+</div>
