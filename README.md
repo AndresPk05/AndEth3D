@@ -22,11 +22,6 @@ npm install   # solo la primera vez
 npm run dev
 ```
 
-## Credenciales de desarrollo
-
-- **Admin:** `admin@andeth3d.com` / `Admin123!` (configurable en `backend/appsettings.Development.json`, sección `AdminSeed`)
-- Los clientes se registran desde `/registro`.
-
 ## Flujo de uso
 
 1. El cliente se registra e inicia sesión.
