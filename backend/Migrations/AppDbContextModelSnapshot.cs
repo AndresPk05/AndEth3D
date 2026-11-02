@@ -344,6 +344,165 @@ namespace AndEth3D.Backend.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("AndEth3D.Backend.Models.VisualConversationUsage", b =>
+                {
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ActiveProposalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("ChargedUsd")
+                        .HasPrecision(14, 6)
+                        .HasColumnType("numeric(14,6)");
+
+                    b.Property<int>("ProposalCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("ConversationId");
+
+                    b.ToTable("VisualConversationUsages");
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.VisualProposal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AttemptsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BriefFingerprint")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BriefJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FailureCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImageFile")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LeaseUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ManufacturingRevisionId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ParentProposalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("ReservedUsd")
+                        .HasPrecision(14, 6)
+                        .HasColumnType("numeric(14,6)");
+
+                    b.Property<int>("SettingsRevisionId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ManufacturingRevisionId");
+
+                    b.HasIndex("ParentProposalId");
+
+                    b.HasIndex("SettingsRevisionId");
+
+                    b.HasIndex("ConversationId", "Number")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "NextAttemptAt");
+
+                    b.ToTable("VisualProposals");
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.VisualSettingsRevision", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConfigurationJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Version")
+                        .IsUnique();
+
+                    b.ToTable("VisualSettingsRevisions");
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.VisualUserUsage", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Day")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ReservedAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("VisualUserUsages");
+                });
+
             modelBuilder.Entity("AndEth3D.Backend.Models.ChatAllowance", b =>
                 {
                     b.HasOne("AndEth3D.Backend.Models.User", null)
@@ -401,6 +560,50 @@ namespace AndEth3D.Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.VisualConversationUsage", b =>
+                {
+                    b.HasOne("AndEth3D.Backend.Models.ChatConversation", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.VisualProposal", b =>
+                {
+                    b.HasOne("AndEth3D.Backend.Models.ChatConversation", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null)
+                        .WithMany()
+                        .HasForeignKey("ManufacturingRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AndEth3D.Backend.Models.VisualProposal", null)
+                        .WithMany()
+                        .HasForeignKey("ParentProposalId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AndEth3D.Backend.Models.VisualSettingsRevision", null)
+                        .WithMany()
+                        .HasForeignKey("SettingsRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.VisualUserUsage", b =>
+                {
+                    b.HasOne("AndEth3D.Backend.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

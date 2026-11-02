@@ -132,3 +132,32 @@ Un identificador por mensaje evita repetir llamadas en reintentos. La reserva us
 La migración `20261102183204_DesignChat` agrega conversaciones, turnos y cuotas; se aplica al arrancar junto con las migraciones previas. No altera cotizaciones existentes.
 
 Validación de fase 2: `dotnet run --project tests/ManufacturingChecks/ManufacturingChecks.csproj` incluye TestServer, agente simulado, aislamiento de usuarios, límites, reintentos, concurrencia, conservación de ficha y contrato HTTP de OpenRouter con un handler simulado. Se genera el SQL PostgreSQL y se compara el snapshot; las operaciones se prueban en SQLite en memoria. Las llamadas reales requieren configurar credenciales y un modelo, y la migración debe verificarse en una instancia PostgreSQL antes de desplegar.
+## Arquitectura: controllers como puerta HTTP
+
+Regla obligatoria en `AGENTS.md`: todos los controllers se limitan a declarar rutas, autorización, binding/validación de entrada y delegación al servicio de aplicación. No contienen consultas, mutaciones de entidades, cálculos, acceso a archivos ni llamadas a proveedores.
+
+- `backend/Controllers`: adaptadores HTTP, con acciones de una sola delegación.
+- `backend/Contracts`: contratos de entrada y salida, fuera de los controllers.
+- `backend/Services/Application`: casos de uso de autenticación, galería, pedidos, cotizaciones, fabricación, chat y propuestas visuales.
+- `backend/Services/AppResult.cs`: resultados de aplicación sin dependencia MVC e interfaces de identidad/autenticación.
+- `backend/Http`: traducción de resultados a HTTP e identidad actual mediante HttpContext. BCrypt y JWT conservan sus implementaciones de producción detrás de interfaces.
+- `ArchitectureChecks` analiza los controllers con Roslyn y rechaza acciones con lógica, dependencias de datos o miembros que no sean endpoints; también verifica que los servicios no dependan de controllers/MVC/Http. Las pruebas se ejecutan con el comando de integración habitual.
+
+## Propuestas visuales (fase 3)
+
+- `/crear` permite generar una imagen desde una ficha completa y compatible, consultar el historial, descargar imágenes privadas y crear otra propuesta usando una anterior como referencia. Los cambios de tamaño, color y personalización se hacen primero en el chat para mantener una sola ficha validada.
+- Cada propuesta conserva ficha, huella SHA-256, versión de fabricación, configuración del modelo, prompt y referencia original. La interfaz muestra la ficha de cada propuesta y marca imágenes anteriores cuando cambian los requisitos o la configuración de fabricación. Las imágenes se presentan siempre como conceptuales, no como modelos 3D ni garantías de fabricación.
+- `/admin/imagenes` administra modelo, resolución, capacidad de edición, límites y reservas. Cada guardado crea una revisión. Es necesario confirmar en OpenRouter que el modelo elegido admita PNG, la resolución y, para editar, `input_references` como base64. La clave sigue siendo `OpenRouter__ApiKey`, exclusivamente en el servidor. La función viene desactivada hasta configurarla desde administración.
+- OpenRouter recibe `POST /api/v1/images`, una imagen por llamada, salida PNG y, para edición, una referencia base64 privada. Nunca se descargan URLs devueltas por el proveedor ni se exponen rutas privadas. No hay fallback automático entre proveedores.
+- Las solicitudes se persisten como trabajos antes de responder HTTP 202. Un BackgroundService consulta la cola durable y reclama trabajos con concurrencia optimista. Solo se admite un trabajo activo por conversación; los identificadores de petición hacen idempotentes los reintentos del navegador. Cerrar el navegador no cancela la generación.
+- Se permiten reintentos automáticos limitados ante respuestas 429/503, con espera progresiva. Los timeouts, desconexiones inciertas y trabajos abandonados tras un reinicio se marcan fallidos sin repetir una posible llamada cobrada. Las respuestas tardías no sobrescriben trabajos ya finalizados. Las imágenes previas y la conversación se conservan.
+- La reserva por intento es un valor administrativo estimado, **no un tope garantizado de facturación del proveedor**. Se reserva el máximo de intentos antes de encolar y no se devuelve ante cancelaciones/resultados inciertos. Se registra `usage.cost` cuando existe y los excesos conocidos se cargan adicionalmente al presupuesto. Configura también el límite de gasto de la clave en OpenRouter. Las cuotas diarias se contabilizan en UTC.
+- Los PNG se validan por tamaño, dimensiones, estructura de chunks y CRC. No es un análisis semántico de la imagen ni una certificación del diseño. Se guardan fuera de `wwwroot`, en `backend/App_Data/proposals`. Mantén este directorio en almacenamiento persistente y respaldos; con varias réplicas debe ser compartido. Las descargas exigen ser propietario y usan `private, no-store`.
+- La migración `20261102185448_VisualProposals` agrega configuración, propuestas y contadores de uso. Se aplica mediante el arranque habitual. No cambia cotizaciones ni pedidos previos.
+- Las pruebas de integración cubren configuración administrativa, autorización, cola durable, idempotencia, edición con referencia, versiones desactualizadas, reintentos, fallos, cuotas y validación de archivos. OpenRouter se simula: la validación real del proveedor/modelo requiere credenciales. Las operaciones de datos se prueban en SQLite y el esquema/SQL se verifica con el proveedor PostgreSQL sin conectarse a producción.
+
+```powershell
+dotnet run --project tests/ManufacturingChecks/ManufacturingChecks.csproj
+dotnet run --project tests/SecurityChecks/SecurityChecks.csproj
+npm --prefix frontend test
+```

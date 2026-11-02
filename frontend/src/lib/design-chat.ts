@@ -1,4 +1,5 @@
 import { apiFetch, requireAuth } from "./api";
+import "./visual-proposals";
 
 const session = requireAuth();
 type Assessment = { status: string; question: string; suggestions: string[]; issues: string[]; missing: string[] };
@@ -22,12 +23,18 @@ let skip = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let catalog: {materials: {id: string; name: string}[]; categories: {id: string; name: string}[]} = {materials: [], categories: []};
 const key = () => `andeth-chat-pending-${session.user.id}-${active}`;
+let visualContext = "";
 function lock() {
   const blocked = !enabled || sending || loading || !!current?.busy || (current !== null && (!current.budgetAvailable || current.remainingTurns === 0));
   input.disabled = blocked; send.disabled = blocked;
   create.disabled = sending || loading; select.disabled = sending || loading;
   choices.querySelectorAll("button").forEach(button => button.disabled = blocked);
   send.textContent = sending || current?.busy ? "Preparando respuesta…" : "Enviar";
+  const context = `${active}:${sending || loading || !!current?.busy}`;
+  if (context !== visualContext) {
+    visualContext = context;
+    document.dispatchEvent(new CustomEvent("design:conversation", {detail: {id: active, busy: sending || loading || !!current?.busy}}));
+  }
 }
 function showMessage(text: string, user: boolean) {
   const box = document.createElement("div");

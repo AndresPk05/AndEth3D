@@ -1,18 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.0" />
     <Compile Include="../../backend/Models/*.cs" Link="Models/%(Filename)%(Extension)" />
     <Compile Include="../../backend/Data/AppDbContext.cs" Link="AppDbContext.cs" />
-    <Compile Include="../../backend/Controllers/ManufacturingController.cs" Link="ManufacturingController.cs" />
-    <Compile Include="../../backend/Controllers/QuotesController.cs" Link="QuotesController.cs" />
-    <Compile Include="../../backend/Controllers/ChatController.cs" Link="ChatController.cs" />
+    <Compile Include="../../backend/Controllers/*.cs" Link="Controllers/%(Filename)%(Extension)" />
+    <Compile Include="../../backend/Contracts/*.cs" Link="Contracts/%(Filename)%(Extension)" />
+    <Compile Include="../../backend/Http/*.cs" Link="Http/%(Filename)%(Extension)" />
+    <Compile Include="../../backend/Services/Application/*.cs" Link="Application/%(Filename)%(Extension)" />
+    <Compile Include="../../backend/Services/AppResult.cs" Link="AppResult.cs" />
     <Compile Include="../../backend/Services/ChatOptions.cs" Link="ChatOptions.cs" />
     <Compile Include="../../backend/Services/DesignPolicy.cs" Link="DesignPolicy.cs" />
     <Compile Include="../../backend/Services/OpenRouterDesignClient.cs" Link="OpenRouterDesignClient.cs" />
     <Compile Include="../../backend/Services/FileStorage.cs" Link="FileStorage.cs" />
+    <Compile Include="../../backend/Services/Visual*.cs" Link="%(Filename)%(Extension)" />
+    <Compile Include="../../backend/Services/ProposalImageStore.cs" Link="ProposalImageStore.cs" />
+    <Compile Include="../../backend/Services/OpenRouterImageClient.cs" Link="OpenRouterImageClient.cs" />
     <Compile Include="../../backend/Migrations/*.cs" Link="Migrations/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

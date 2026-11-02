@@ -5,6 +5,10 @@ namespace AndEth3D.Backend.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<VisualSettingsRevision> VisualSettingsRevisions => Set<VisualSettingsRevision>();
+    public DbSet<VisualProposal> VisualProposals => Set<VisualProposal>();
+    public DbSet<VisualConversationUsage> VisualConversationUsages => Set<VisualConversationUsage>();
+    public DbSet<VisualUserUsage> VisualUserUsages => Set<VisualUserUsage>();
     public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
     public DbSet<ChatTurn> ChatTurns => Set<ChatTurn>();
     public DbSet<ChatAllowance> ChatAllowances => Set<ChatAllowance>();
@@ -16,6 +20,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<VisualSettingsRevision>().HasIndex(r => r.Version).IsUnique();
+        modelBuilder.Entity<VisualProposal>().Property(p => p.Version).IsConcurrencyToken();
+        modelBuilder.Entity<VisualProposal>().Property(p => p.ReservedUsd).HasPrecision(14, 6);
+        modelBuilder.Entity<VisualProposal>().HasIndex(p => new { p.ConversationId, p.Number }).IsUnique();
+        modelBuilder.Entity<VisualProposal>().HasIndex(p => new { p.Status, p.NextAttemptAt });
+        modelBuilder.Entity<VisualProposal>().HasOne<ChatConversation>().WithMany().HasForeignKey(p => p.ConversationId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<VisualProposal>().HasOne<VisualProposal>().WithMany().HasForeignKey(p => p.ParentProposalId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<VisualProposal>().HasOne<ManufacturingRevision>().WithMany().HasForeignKey(p => p.ManufacturingRevisionId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<VisualProposal>().HasOne<VisualSettingsRevision>().WithMany().HasForeignKey(p => p.SettingsRevisionId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<VisualConversationUsage>().HasKey(u => u.ConversationId);
+        modelBuilder.Entity<VisualConversationUsage>().Property(u => u.Version).IsConcurrencyToken();
+        modelBuilder.Entity<VisualConversationUsage>().Property(u => u.ChargedUsd).HasPrecision(14, 6);
+        modelBuilder.Entity<VisualConversationUsage>().HasOne<ChatConversation>().WithMany().HasForeignKey(u => u.ConversationId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<VisualUserUsage>().HasKey(u => u.UserId);
+        modelBuilder.Entity<VisualUserUsage>().Property(u => u.Version).IsConcurrencyToken();
+        modelBuilder.Entity<VisualUserUsage>().HasOne<User>().WithMany().HasForeignKey(u => u.UserId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<ChatConversation>().Property(c => c.Version).IsConcurrencyToken();
         modelBuilder.Entity<ChatConversation>().Property(c => c.ReservedUsd).HasPrecision(14, 6);
         modelBuilder.Entity<ChatConversation>().HasIndex(c => new { c.UserId, c.UpdatedAt });

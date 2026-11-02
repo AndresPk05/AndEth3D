@@ -2,6 +2,7 @@ using System.Text;
 using AndEth3D.Backend.Data;
 using AndEth3D.Backend.Models;
 using AndEth3D.Backend.Services;
+using AndEth3D.Backend.Http;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,10 +25,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddSingleton<TokenService>();
+builder.Services.AddSingleton<ITokenIssuer>(s => s.GetRequiredService<TokenService>());
+builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentActor, HttpCurrentActor>();
+builder.Services.AddApplicationServices();
 builder.Services.AddSingleton<FileStorage>();
 builder.Services.AddOptions<ChatOptions>().Bind(builder.Configuration.GetSection("OpenRouter"))
     .Validate(o => o.Valid(), "Configure OpenRouter credentials, models and positive usage limits.").ValidateOnStart();
 builder.Services.AddHttpClient<IDesignAgent, OpenRouterDesignClient>(http => http.Timeout = Timeout.InfiniteTimeSpan);
+builder.Services.AddSingleton<ProposalImageStore>();
+builder.Services.AddScoped<VisualProposalProcessor>();
+builder.Services.AddHttpClient<IImageGenerator, OpenRouterImageClient>(http => http.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddHostedService<VisualProposalWorker>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

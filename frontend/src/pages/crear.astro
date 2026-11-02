@@ -5,7 +5,7 @@ import Layout from "../layouts/Layout.astro";
   <section class="max-w-6xl mx-auto px-4 py-10">
     <h1 class="font-display text-3xl sm:text-4xl font-extrabold mb-3">Vamos a darle forma a tu idea</h1>
     <p class="text-ink-soft mb-6">Cuéntanos qué necesitas. Te ayudaremos a definir medidas, material y detalles, paso a paso. Tu conversación se guarda para que puedas continuar después.</p>
-    <p class="text-sm text-ink-soft mb-6">Este asistente prepara la ficha de tu idea; todavía no genera imágenes ni calcula precios. Los mensajes se procesan con un servicio de inteligencia artificial.</p>
+    <p class="text-sm text-ink-soft mb-6">Completa la ficha y genera una propuesta visual de tu idea. Las imágenes son conceptuales y requieren revisión técnica; todavía no calculamos precios. Usamos servicios de inteligencia artificial para procesar tus solicitudes.</p>
     <div class="flex flex-wrap gap-3 mb-6 items-end">
       <label class="flex-1 min-w-48 text-sm font-semibold">Mis ideas
         <select id="conversation-select" class="block w-full rounded-xl border border-brand-200 px-3 py-2 mt-1"><option value="">Nueva idea</option></select>
@@ -36,6 +36,34 @@ import Layout from "../layouts/Layout.astro";
         <a href="/cotizar" class="inline-block mt-4 text-brand-700 underline">Solicitar asesoría mediante cotización</a>
       </aside>
     </div>
+    <section class="mt-8 bg-white rounded-2xl border border-brand-100 p-5 sm:p-7" aria-label="Propuestas visuales">
+      <h2 class="font-display text-2xl font-bold mb-3">Así podría verse tu idea</h2>
+      <p class="text-sm text-ink-soft mb-4">Para cambiar tamaño, color o personalización, actualiza primero la ficha en el chat. Después puedes usar una propuesta anterior como referencia para la nueva imagen.</p>
+      <p id="visual-status" role="status" aria-live="polite" class="text-sm mb-4">Comienza una conversación para crear tu primera propuesta.</p>
+      <div class="flex flex-wrap items-end gap-3 mb-6">
+        <label class="text-sm font-semibold flex-1 min-w-48">Imagen de referencia
+          <select id="visual-parent" class="block w-full border border-brand-200 rounded-xl px-3 py-2 mt-1"><option value="">Crear desde la ficha</option></select>
+        </label>
+        <button id="visual-generate" type="button" disabled class="rounded-full bg-brand-600 text-white px-5 py-3 font-bold disabled:opacity-50">Generar propuesta</button>
+        <button id="visual-refresh" type="button" disabled class="rounded-full border border-brand-200 px-5 py-3">Actualizar propuestas</button>
+      </div>
+      <div class="grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6">
+        <div>
+          <p id="visual-label" class="font-semibold mb-3"></p>
+          <p id="visual-outdated" class="hidden bg-amber-50 text-amber-900 rounded-xl p-3 text-sm mb-3">Esta imagen corresponde a una ficha u opciones anteriores. No representa necesariamente tu solicitud actual.</p>
+          <img id="visual-image" alt="Propuesta conceptual del objeto solicitado" class="hidden w-full max-h-[600px] object-contain rounded-xl bg-brand-50" />
+          <p id="visual-empty" class="rounded-xl bg-brand-50 p-8 text-center text-ink-soft">Tu propuesta aparecerá aquí.</p>
+          <a id="visual-download" class="hidden inline-block mt-3 text-brand-700 underline" download="propuesta.png">Descargar imagen</a>
+          <p class="text-xs text-ink-soft mt-4">Vista conceptual generada con IA. No es un modelo 3D ni garantiza dimensiones exactas o imprimibilidad.</p>
+        </div>
+        <div>
+          <h3 class="font-bold mb-3">Historial de propuestas</h3>
+          <div id="visual-history" class="flex flex-wrap gap-2 mb-5"></div>
+          <h3 class="font-bold mb-3">Ficha de esta propuesta</h3>
+          <p id="visual-specification" class="text-sm whitespace-pre-wrap break-words text-ink-soft">Selecciona una propuesta para consultar sus detalles.</p>
+        </div>
+      </div>
+    </section>
   </section>
   <script>
     import "../lib/design-chat";

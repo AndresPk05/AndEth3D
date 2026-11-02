@@ -7,6 +7,7 @@ using AndEth3D.Backend.Controllers;
 using AndEth3D.Backend.Data;
 using AndEth3D.Backend.Models;
 using AndEth3D.Backend.Services;
+using AndEth3D.Backend.Http;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
@@ -16,12 +17,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
 
 void Check(bool value, string name) { if (!value) throw new Exception(name); Console.WriteLine("PASS " + name); }
+ArchitectureChecks.Run();
 // Validate the real PostgreSQL migration model without needing a running server.
 using (var pg = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql("Host=localhost;Database=checks").Options))
 {
     Check(!pg.Database.HasPendingModelChanges(), "PostgreSQL snapshot matches runtime model");
     var sql = pg.GetService<IMigrator>().GenerateScript("20261102000001_SessionVersion");
-    Check(sql.Contains("ManufacturingRevisions") && sql.Contains("ChatConversations") && sql.Contains("ChatTurns") && sql.Contains("ChatAllowances") && sql.Contains("ON DELETE RESTRICT"), "PostgreSQL manufacturing and chat migration scripts generated");
+    Check(sql.Contains("ManufacturingRevisions") && sql.Contains("ChatConversations") && sql.Contains("ChatTurns") && sql.Contains("ChatAllowances") && sql.Contains("VisualProposals") && sql.Contains("VisualUserUsages") && sql.Contains("ON DELETE RESTRICT"), "PostgreSQL manufacturing, chat and image migration scripts generated");
 }
 using var connection = new SqliteConnection("Data Source=:memory:");
 await connection.OpenAsync();
@@ -30,6 +32,15 @@ builder.Logging.ClearProviders();
 builder.WebHost.UseTestServer();
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite(connection));
 builder.Services.AddSingleton<FileStorage>();
+builder.Services.AddApplicationServices();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentActor, HttpCurrentActor>();
+builder.Services.AddSingleton<IPasswordHasher, TestPasswordHasher>();
+builder.Services.AddSingleton<ITokenIssuer, TestTokenIssuer>();
+builder.Services.AddSingleton<ProposalImageStore>();
+builder.Services.AddScoped<VisualProposalProcessor>();
+var imageGenerator = new FakeImageGenerator();
+builder.Services.AddSingleton<IImageGenerator>(imageGenerator);
 var chatOptions = new ChatOptions { Enabled = true, ApiKey = "test-only-not-a-real-key", Models = ["test/model"], MinimumIntervalSeconds = 0 };
 var designAgent = new FakeDesignAgent();
 builder.Services.AddSingleton<IDesignAgent>(designAgent);
@@ -100,6 +111,8 @@ Check(frozen.GetProperty("version").GetInt32() == 1 && frozen.GetProperty("confi
 Check((await client.GetAsync("/api/manufacturing/history/1")).IsSuccessStatusCode, "historical revision retrievable");
 Console.WriteLine("Manufacturing integration checks completed.");
 await ChatChecks.Run(client, app.Services, designAgent, chatOptions);
+await GatewayChecks.Run(client, app.Services);
+await VisualChecks.Run(client, app.Services, imageGenerator);
 
 class TestAuth(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)

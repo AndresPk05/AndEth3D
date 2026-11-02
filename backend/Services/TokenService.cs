@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace AndEth3D.Backend.Services;
 
-public class TokenService(IConfiguration config)
+public class TokenService(IConfiguration config) : ITokenIssuer
 {
     public string CreateToken(User user)
     {
