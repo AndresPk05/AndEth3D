@@ -12,6 +12,7 @@
     <Compile Include="../../backend/Http/*.cs" Link="Http/%(Filename)%(Extension)" />
     <Compile Include="../../backend/Services/Application/*.cs" Link="Application/%(Filename)%(Extension)" />
     <Compile Include="../../backend/Services/AppResult.cs" Link="AppResult.cs" />
+    <Compile Include="../../backend/Services/EstimationEngine.cs" Link="EstimationEngine.cs" />
     <Compile Include="../../backend/Services/ChatOptions.cs" Link="ChatOptions.cs" />
     <Compile Include="../../backend/Services/DesignPolicy.cs" Link="DesignPolicy.cs" />
     <Compile Include="../../backend/Services/OpenRouterDesignClient.cs" Link="OpenRouterDesignClient.cs" />

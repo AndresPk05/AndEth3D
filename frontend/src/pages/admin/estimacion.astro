@@ -1,0 +1,32 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import AdminTabs from "../../components/AdminTabs.astro";
+const fields = [
+  ["widthMm","Ancho (mm)",1,5000], ["depthMm","Fondo (mm)",1,5000], ["heightMm","Alto (mm)",1,5000],
+  ["grams","Filamento total (g)",0.01,100000], ["machineHours","Tiempo de máquina (h)",0.01,10000],
+  ["designHours","Diseño (h)",0,1000], ["finishingHours","Acabado por pieza (h)",0,1000],
+];
+---
+<Layout title="Admin - Calibración de estimaciones">
+  <section class="max-w-6xl mx-auto px-4 py-10">
+    <AdminTabs />
+    <h1 class="text-3xl font-bold mb-4">Calibración con piezas reales</h1>
+    <p class="mb-4">Registra resultados de laminado o producción de una pieza. Incluye soportes, purga y desperdicio en los gramos. Se necesitan al menos tres referencias distintas por categoría, material, equipo, colores y complejidad. Solo estimamos medidas dentro del rango observado.</p>
+    <p class="mb-4">Al cambiar fabricación, revisa y vuelve a guardar las muestras. La calibración queda asociada a esas condiciones; no se activa automáticamente para un equipo nuevo.</p>
+    <p id="calibration-status" role="status" aria-live="polite">Cargando.</p>
+    <form id="calibration-form" class="hidden bg-white rounded-2xl border p-5 my-5 grid sm:grid-cols-3 gap-4">
+      <label>Categoría<select required name="categoryId" class="block border rounded p-2 w-full"></select></label>
+      <label>Material<select required name="materialId" class="block border rounded p-2 w-full"></select></label>
+      <label>Equipo interno<select required name="printerId" class="block border rounded p-2 w-full"></select></label>
+      <label>Complejidad<select name="complexity" class="block border rounded p-2 w-full"><option value="simple">Sencilla</option><option value="standard" selected>Media</option><option value="complex">Alta</option></select></label>
+      <label>Número de colores<input required name="colorCount" type="number" min="1" max="16" value="1" class="block border rounded p-2 w-full" /></label>
+      {fields.map(([name,label,min,max])=><label>{label}<input required name={String(name)} type="number" min={min} max={max} step="0.01" class="block border rounded p-2 w-full" /></label>)}
+      <label class="sm:col-span-3">Referencia del trabajo o archivo laminado y parámetros utilizados<input required name="evidence" minlength="3" maxlength="500" class="block border rounded p-2 w-full" /></label>
+      <button class="rounded-full bg-brand-600 text-white px-5 py-2">Agregar muestra</button>
+    </form>
+    <div id="calibration-samples" class="space-y-2 my-4"></div>
+    <button id="calibration-save" type="button" disabled class="rounded-full bg-brand-600 text-white px-5 py-2 disabled:opacity-50">Guardar versión de calibración</button>
+    <p id="calibration-history" class="text-sm my-4"></p>
+  </section>
+  <script>import "../../lib/calibration";</script>
+</Layout>

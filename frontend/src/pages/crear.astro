@@ -1,11 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import DesignEstimate from "../components/DesignEstimate.astro";
 ---
 <Layout title="Diseña tu idea" description="Cuéntanos qué quieres crear y define tu idea de impresión 3D con nuestro asistente.">
   <section class="max-w-6xl mx-auto px-4 py-10">
     <h1 class="font-display text-3xl sm:text-4xl font-extrabold mb-3">Vamos a darle forma a tu idea</h1>
     <p class="text-ink-soft mb-6">Cuéntanos qué necesitas. Te ayudaremos a definir medidas, material y detalles, paso a paso. Tu conversación se guarda para que puedas continuar después.</p>
-    <p class="text-sm text-ink-soft mb-6">Completa la ficha y genera una propuesta visual de tu idea. Las imágenes son conceptuales y requieren revisión técnica; todavía no calculamos precios. Usamos servicios de inteligencia artificial para procesar tus solicitudes.</p>
+    <p class="text-sm text-ink-soft mb-6">Completa la ficha, genera una propuesta visual y consulta un precio orientativo cuando tengamos referencias comparables. Las imágenes y estimaciones requieren revisión técnica. Usamos servicios de inteligencia artificial para procesar tus solicitudes.</p>
     <div class="flex flex-wrap gap-3 mb-6 items-end">
       <label class="flex-1 min-w-48 text-sm font-semibold">Mis ideas
         <select id="conversation-select" class="block w-full rounded-xl border border-brand-200 px-3 py-2 mt-1"><option value="">Nueva idea</option></select>
@@ -65,7 +66,9 @@ import Layout from "../layouts/Layout.astro";
       </div>
     </section>
   </section>
+  <DesignEstimate />
   <script>
+    import "../lib/design-estimate";
     import "../lib/design-chat";
   </script>
 </Layout>

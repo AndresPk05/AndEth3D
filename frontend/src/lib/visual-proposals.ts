@@ -82,6 +82,7 @@ async function reload() {
     const pending = sessionStorage.getItem(pendingKey());
     if (pending) { try { if (state.proposals.some(p => p.id === JSON.parse(pending).requestId)) sessionStorage.removeItem(pendingKey()); } catch { sessionStorage.removeItem(pendingKey()); } }
     render();
+    document.dispatchEvent(new CustomEvent("design:visuals"));
     if (state.proposals.some(p => p.status === "Queued" || p.status === "Processing")) poll = setTimeout(reload, 3000);
   } catch (e) {
     if (conversationId === active && request === refreshRequest) {

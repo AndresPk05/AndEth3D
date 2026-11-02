@@ -11,7 +11,7 @@ public class QuotesService(AppDbContext db, FileStorage storage, ICurrentActor a
     private static QuoteDto ToDto(QuoteRequest q) => new(
         q.Id, q.UserId, q.User.Name, q.User.Email,
         q.Description, q.Material, q.ReferenceFileUrl,
-        q.Status, q.AdminNotes, q.CreatedAt);
+        q.Status, q.AdminNotes, q.CreatedAt, q.DesignSnapshotJson is not null, q.ConfirmedPriceCop);
 
     private int CurrentUserId => actor.Id;
     public async Task<AppResult> Create(
@@ -69,11 +69,16 @@ public class QuotesService(AppDbContext db, FileStorage storage, ICurrentActor a
         var quote = await db.QuoteRequests.Include(q => q.User).FirstOrDefaultAsync(q => q.Id == id);
         if (quote is null) return AppResult.NotFound();
 
+        if (quote.DesignSnapshotJson is not null && request.Status == QuoteStatus.Quoted)
+            return AppResult.Invalid(new { message = "Confirma el precio desde la revisión de la propuesta." });
+
         if (quote.Status == QuoteStatus.Converted || request.Status == QuoteStatus.Converted ||
             await db.Orders.AnyAsync(o => o.QuoteRequestId == id))
             return AppResult.Conflict(new { message = "Una cotizacion convertida no puede cambiar de estado. Use convertir para crear un pedido." });
         quote.Status = request.Status;
         quote.AdminNotes = request.AdminNotes;
+        if (quote.DesignSnapshotJson is not null) quote.ConfirmedPriceCop = null;
+        quote.ReviewVersion++;
         await db.SaveChangesAsync();
         return AppResult.Ok(ToDto(quote));
     }
@@ -86,18 +91,21 @@ public class QuotesService(AppDbContext db, FileStorage storage, ICurrentActor a
 
         if (quote.Status == QuoteStatus.Rejected)
             return AppResult.Conflict(new { message = "Debe reabrir la cotizacion rechazada antes de convertirla." });
+        if (quote.DesignSnapshotJson is not null && (quote.ConfirmedPriceCop is null || quote.Status != QuoteStatus.Quoted || (request.Price is not null && request.Price != quote.ConfirmedPriceCop)))
+            return AppResult.Conflict(new { message = "Revisa y confirma el precio de la propuesta antes de convertirla. El pedido debe conservar ese precio." });
         var order = new Order
         {
             UserId = quote.UserId,
             QuoteRequestId = quote.Id,
             Title = string.IsNullOrWhiteSpace(request.Title) ? $"Pedido de {quote.User.Name}" : request.Title,
             Description = quote.Description,
-            Price = request.Price,
+            Price = quote.DesignSnapshotJson is not null ? quote.ConfirmedPriceCop : request.Price,
             Notes = request.Notes,
             Status = OrderStatus.Pending,
         };
 
         quote.Status = QuoteStatus.Converted;
+        quote.ReviewVersion++;
         quote.AdminNotes = request.Notes ?? quote.AdminNotes;
         db.Orders.Add(order);
         try { await db.SaveChangesAsync(); }

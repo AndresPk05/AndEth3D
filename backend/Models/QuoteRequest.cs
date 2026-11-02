@@ -8,6 +8,12 @@ public class QuoteRequest
     public string Description { get; set; } = string.Empty;
     public string Material { get; set; } = string.Empty;
     public int? ManufacturingRevisionId { get; set; }
+    public Guid? DesignRequestId { get; set; }
+    public Guid? ProposalId { get; set; }
+    public string? DesignSnapshotJson { get; set; }
+    public string? DesignEstimateToken { get; set; }
+    public decimal? ConfirmedPriceCop { get; set; }
+    public int ReviewVersion { get; set; }
     public string? ReferenceFileUrl { get; set; }
     public string Status { get; set; } = QuoteStatus.Pending;
     public string? AdminNotes { get; set; }

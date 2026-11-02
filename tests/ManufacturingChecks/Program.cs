@@ -113,6 +113,7 @@ Console.WriteLine("Manufacturing integration checks completed.");
 await ChatChecks.Run(client, app.Services, designAgent, chatOptions);
 await GatewayChecks.Run(client, app.Services);
 await VisualChecks.Run(client, app.Services, imageGenerator);
+await EstimationChecks.Run(client, app.Services);
 
 class TestAuth(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)

@@ -43,6 +43,8 @@ import Layout from "../layouts/Layout.astro";
     }
 
     interface Quote {
+      fromDesign: boolean;
+      confirmedPriceCop: number | null;
       id: number;
       description: string;
       material: string;
@@ -121,6 +123,7 @@ import Layout from "../layouts/Layout.astro";
             <p class="text-sm">${escapeHtml(q.description)}</p>
             <p class="text-xs text-ink-soft mt-1">Material: ${escapeHtml(q.material)} · ${formatDate(q.createdAt)}</p>
             ${q.adminNotes ? `<p class="text-xs mt-2 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2"><span class="font-semibold">Respuesta:</span> ${escapeHtml(q.adminNotes)}</p>` : ""}
+            ${q.fromDesign ? `<a class="block text-sm text-brand-700 underline mt-3" href="/cotizacion-diseno?id=${q.id}">Ver propuesta y precio ${q.confirmedPriceCop === null ? "orientativo" : "confirmado"}</a>` : ""}
           </div>
           <span class="shrink-0 px-3 py-1 rounded-full text-xs font-bold ${QUOTE_COLORS[q.status] ?? "bg-brand-100 text-brand-700"}">${escapeHtml(QUOTE_LABELS[q.status] ?? q.status)}</span>
         </article>`;

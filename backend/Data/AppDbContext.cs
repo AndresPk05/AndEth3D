@@ -5,6 +5,7 @@ namespace AndEth3D.Backend.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<CalibrationRevision> CalibrationRevisions => Set<CalibrationRevision>();
     public DbSet<VisualSettingsRevision> VisualSettingsRevisions => Set<VisualSettingsRevision>();
     public DbSet<VisualProposal> VisualProposals => Set<VisualProposal>();
     public DbSet<VisualConversationUsage> VisualConversationUsages => Set<VisualConversationUsage>();
@@ -20,6 +21,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<CalibrationRevision>().HasIndex(r => r.Version).IsUnique();
+        modelBuilder.Entity<CalibrationRevision>().HasOne<ManufacturingRevision>().WithMany().HasForeignKey(r => r.ManufacturingRevisionId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<QuoteRequest>().HasIndex(q => q.DesignRequestId).IsUnique();
+        modelBuilder.Entity<QuoteRequest>().HasOne<VisualProposal>().WithMany().HasForeignKey(q => q.ProposalId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<QuoteRequest>().Property(q => q.ConfirmedPriceCop).HasPrecision(12,2);
+        modelBuilder.Entity<QuoteRequest>().Property(q => q.ReviewVersion).IsConcurrencyToken();
         modelBuilder.Entity<VisualSettingsRevision>().HasIndex(r => r.Version).IsUnique();
         modelBuilder.Entity<VisualProposal>().Property(p => p.Version).IsConcurrencyToken();
         modelBuilder.Entity<VisualProposal>().Property(p => p.ReservedUsd).HasPrecision(14, 6);

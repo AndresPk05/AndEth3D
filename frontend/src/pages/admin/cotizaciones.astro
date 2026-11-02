@@ -19,6 +19,8 @@ import AdminTabs from "../../components/AdminTabs.astro";
     requireAuth("Admin");
 
     interface Quote {
+      fromDesign: boolean;
+      confirmedPriceCop: number | null;
       id: number;
       userName: string;
       userEmail: string;
@@ -68,14 +70,15 @@ import AdminTabs from "../../components/AdminTabs.astro";
               </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 mt-4">
+              ${q.fromDesign ? `<a class="text-brand-700 underline" href="/cotizacion-diseno?id=${q.id}">Revisar ficha, imagen, conversación y estimación</a><p class="text-sm">Precio confirmado: ${q.confirmedPriceCop === null ? "Pendiente" : escapeHtml(q.confirmedPriceCop)} COP</p>` : ""}
               <input type="text" placeholder="Respuesta al cliente (notas)" value="${escapeHtml(q.adminNotes ?? "")}"
                 class="notes-input flex-1 min-w-52 px-3 py-2 rounded-lg border border-brand-200 text-sm" />
-              <button ${q.status === "Converted" ? "disabled" : ""} data-status="Quoted" class="status-btn px-3 py-2 rounded-full bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition">Marcar cotizada</button>
+              <button ${q.status === "Converted" || q.fromDesign ? "disabled" : ""} data-status="Quoted" class="status-btn px-3 py-2 rounded-full bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition">Marcar cotizada</button>
               <button ${q.status === "Converted" ? "disabled" : ""} data-status="Rejected" class="status-btn px-3 py-2 rounded-full bg-red-100 text-red-700 text-xs font-bold hover:bg-red-200 transition">Rechazar</button>
               ${q.status !== "Converted" ? `
                 <input type="text" placeholder="Título del pedido" class="title-input w-44 px-3 py-2 rounded-lg border border-brand-200 text-sm" />
-                <input type="number" min="0" step="0.01" placeholder="Precio" class="price-input w-24 px-3 py-2 rounded-lg border border-brand-200 text-sm" />
-                <button class="convert-btn px-4 py-2 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition">Convertir en pedido</button>` : ""}
+                <input type="number" min="0" step="0.01" placeholder="Precio" ${q.fromDesign ? `readonly value="${q.confirmedPriceCop ?? ""}"` : ""} class="price-input w-24 px-3 py-2 rounded-lg border border-brand-200 text-sm" />
+                <button ${q.fromDesign && q.confirmedPriceCop === null ? "disabled" : ""} class="convert-btn px-4 py-2 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition">Convertir en pedido</button>` : ""}
             </div>
             <p class="feedback hidden text-xs mt-2 font-semibold"></p>
             <button type="button" class="config-btn mt-3 text-sm text-brand-700 underline">Ver condiciones de fabricación guardadas</button>

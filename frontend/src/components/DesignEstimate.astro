@@ -1,0 +1,20 @@
+<section class="max-w-6xl mx-auto my-8 bg-white rounded-2xl border border-brand-100 p-6" aria-label="Estimación y cotización">
+  <h2 class="font-display text-2xl font-bold mb-3">¿Cuánto podría costar?</h2>
+  <p class="text-sm text-ink-soft mb-4">El precio orientativo depende de las medidas, el material y los detalles. Lo confirmaremos después de revisar tu propuesta.</p>
+  <label class="block mb-4">Complejidad aproximada
+    <select id="estimate-complexity" class="border rounded-xl p-2 block mt-1">
+      <option value="simple">Sencilla: formas básicas y pocos detalles</option>
+      <option value="standard" selected>Media: varios detalles o personalización</option>
+      <option value="complex">Alta: muchos detalles o acabado exigente</option>
+    </select>
+  </label>
+  <p id="estimate-status" role="status" aria-live="polite">Completa tu ficha para consultar una estimación.</p>
+  <pre id="estimate-summary" class="whitespace-pre-wrap text-sm my-4 font-sans"></pre>
+  <label class="block mb-4">Propuesta para revisión
+    <select id="estimate-proposal" class="border rounded-xl p-2 block mt-1"><option value="">Genera una propuesta actual</option></select>
+  </label>
+  <label class="block text-sm mb-4"><input id="estimate-accept" type="checkbox" /> He revisado la propuesta y entiendo que el precio es orientativo y requiere confirmación.</label>
+  <button id="estimate-refresh" type="button" class="rounded-full border px-5 py-2">Actualizar estimación</button>
+  <button id="estimate-submit" type="button" disabled class="rounded-full bg-brand-600 text-white px-5 py-2 disabled:opacity-50">Solicitar cotización</button>
+  <a id="estimate-result" class="hidden block mt-3 text-brand-700 underline">Ver solicitud enviada</a>
+</section>

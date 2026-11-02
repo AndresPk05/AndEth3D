@@ -5,7 +5,7 @@ namespace AndEth3D.Backend.Contracts;
 public record QuoteDto(
         int Id, int UserId, string UserName, string UserEmail,
         string Description, string Material, string? ReferenceFileUrl,
-        string Status, string? AdminNotes, DateTime CreatedAt);
+        string Status, string? AdminNotes, DateTime CreatedAt, bool FromDesign = false, decimal? ConfirmedPriceCop = null);
 
 public record UpdateQuoteRequest([Required] string Status, [StringLength(5000)] string? AdminNotes);
 
