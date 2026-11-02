@@ -419,6 +419,111 @@ namespace AndEth3D.Backend.Migrations
                     b.ToTable("ParametricJobs");
                 });
 
+            modelBuilder.Entity("AndEth3D.Backend.Models.ProductionRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CategoryId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ColorCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Complexity")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("ConfirmedTotalCop")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("DepthMm")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("DesignHours")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("EstimatedGrams")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("EstimatedHours")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("EstimatedTotalCop")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("FinishingHours")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("Grams")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("HeightMm")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("LaborCostCop")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("MachineCostCop")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("MachineHours")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("ManufacturingRevisionId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("MaterialCostCop")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("MaterialId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("OtherCostCop")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("PrinterId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("WidthMm")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("ManufacturingRevisionId");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.ToTable("ProductionRecords");
+                });
+
             modelBuilder.Entity("AndEth3D.Backend.Models.QuoteRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -763,6 +868,21 @@ namespace AndEth3D.Backend.Migrations
                     b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null)
                         .WithMany()
                         .HasForeignKey("ManufacturingRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.ProductionRecord", b =>
+                {
+                    b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null)
+                        .WithMany()
+                        .HasForeignKey("ManufacturingRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AndEth3D.Backend.Models.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

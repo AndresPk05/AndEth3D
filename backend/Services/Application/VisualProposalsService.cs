@@ -14,6 +14,7 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
         if (conversation is null) return AppResult.NotFound();
         var configRevision = await db.VisualSettingsRevisions.AsNoTracking().OrderByDescending(r => r.Version).FirstOrDefaultAsync();
         var config = configRevision is null ? new() : VisualPolicy.Settings(configRevision);
+        config = ModelRouter.Image(config, DesignPolicy.Read(conversation.BriefJson), false);
         var manufacturing = await db.ManufacturingRevisions.AsNoTracking().OrderByDescending(r => r.Version).FirstOrDefaultAsync();
         var usage = await db.VisualConversationUsages.AsNoTracking().SingleOrDefaultAsync(u => u.ConversationId == conversationId);
         var fingerprint = VisualPolicy.Fingerprint(conversation.BriefJson);
@@ -26,7 +27,7 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
         var historicalConfigurations = (await db.ManufacturingRevisions.AsNoTracking().Where(r => revisionIds.Contains(r.Id)).ToListAsync())
             .ToDictionary(r => r.Id, ManufacturingService.Read);
         return AppResult.Ok(new {
-            enabled, supportsEditing = config.SupportsEditing, fingerprint,
+            enabled, supportsEditing = config.Routing.Enabled ? config.Routing.Edit.SupportsEditing : config.SupportsEditing, fingerprint,
             canGenerate = enabled && ready && budget && usage?.ActiveProposalId is null && !(conversation.BusyUntil > DateTime.UtcNow),
             reason = !enabled ? "La generación de imágenes no está disponible por ahora." : !ready ? "Completa la ficha y resuelve los detalles pendientes para generar una imagen." :
                 !budget ? "Alcanzaste el límite de propuestas de esta conversación." : usage?.ActiveProposalId is not null ? "Tu propuesta está en preparación." : "Puedes generar una vista conceptual de tu ficha actual.",
@@ -57,6 +58,7 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
         var brief = DesignPolicy.Read(conversation.BriefJson);
         if (manufacturing is null || DesignPolicy.Assess(brief, ManufacturingService.Read(manufacturing)).Status != "ReadyForReview")
             return AppResult.Invalid(new { message = "Completa la ficha y ajusta las opciones incompatibles antes de generar una propuesta." });
+        settings = ModelRouter.Image(settings, brief, request.ParentProposalId is not null);
         if (request.ParentProposalId is not null) {
             if (!settings.SupportsEditing) return AppResult.Invalid(new { message = "El modelo configurado no admite editar una imagen anterior." });
             var parent = await db.VisualProposals.AsNoTracking().SingleOrDefaultAsync(p => p.Id == request.ParentProposalId && p.ConversationId == conversationId && p.Status == "Completed");

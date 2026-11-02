@@ -31,6 +31,18 @@ const fields = [
         <input name={String(name)} type="number" min={Number(min)} max={Number(max)} step={Number(step)} required class="block w-full border border-brand-200 rounded-xl px-3 py-2 mt-1" />
       </label>)}
       <p class="sm:col-span-2 text-sm text-ink-soft">Verifica que el modelo admita PNG, la resolución elegida y, si habilitas edición, referencias base64. La reserva cubre los intentos previstos y se conserva ante fallos de resultado incierto. Es un límite interno estimado, no un tope garantizado del proveedor: configura también el límite de gasto de la clave en OpenRouter.</p>
+      <fieldset class="sm:col-span-2 border rounded-xl p-4 space-y-3">
+        <legend class="font-bold">Modelos por tarea</legend>
+        <label><input name="routing.enabled" type="checkbox" /> Activar selección automática por tarea</label>
+        <p class="text-sm">Borrador para ideas simples; detalle para varias tintas o referencias; edición para modificar una propuesta anterior. Los valores de reserva son límites internos estimados, no tarifas del proveedor.</p>
+        {[["draft", "Borrador"], ["detailed", "Detalle"], ["edit", "Edición"]].map(([key, label]) => <fieldset class="border rounded p-3 grid gap-2">
+          <legend>{label}</legend>
+          <label>Modelo <input name={`routing.${key}.model`} required maxlength="150" class="border rounded w-full p-2" /></label>
+          <label>Resolución <select name={`routing.${key}.resolution`} class="border p-2"><option>512</option><option>768</option><option>1K</option><option>1.5K</option><option>2K</option></select></label>
+          <label>Reserva USD por intento <input name={`routing.${key}.reservePerAttemptUsd`} type="number" required min="0.001" max="10" step="0.001" class="border p-2" /></label>
+          <label><input name={`routing.${key}.supportsEditing`} type="checkbox" /> Admite referencias</label>
+        </fieldset>)}
+      </fieldset>
       <div class="sm:col-span-2 flex gap-3">
         <button id="save-image-settings" class="rounded-full bg-brand-600 text-white font-bold px-6 py-3">Guardar nueva versión</button>
         <button id="reload-image-settings" type="button" class="rounded-full border border-brand-200 px-6 py-3">Recargar</button>

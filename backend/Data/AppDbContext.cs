@@ -5,6 +5,7 @@ namespace AndEth3D.Backend.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<ProductionRecord> ProductionRecords => Set<ProductionRecord>();
     public DbSet<ParametricJob> ParametricJobs => Set<ParametricJob>();
     public DbSet<ParametricAllowance> ParametricAllowances => Set<ParametricAllowance>();
     public DbSet<CalibrationRevision> CalibrationRevisions => Set<CalibrationRevision>();
@@ -23,6 +24,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ProductionRecord>().HasIndex(r=>r.OrderId).IsUnique();
+        modelBuilder.Entity<ProductionRecord>().HasIndex(r=>r.CreatedAt);
+        modelBuilder.Entity<ProductionRecord>().HasOne<Order>().WithMany().HasForeignKey(r=>r.OrderId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ProductionRecord>().HasOne<ManufacturingRevision>().WithMany().HasForeignKey(r=>r.ManufacturingRevisionId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<ParametricJob>().Property(j=>j.Version).IsConcurrencyToken();
         modelBuilder.Entity<ParametricJob>().HasIndex(j=>new{j.Status,j.CreatedAt});
         modelBuilder.Entity<ParametricJob>().HasOne<ChatConversation>().WithMany().HasForeignKey(j=>j.ConversationId).OnDelete(DeleteBehavior.Restrict);

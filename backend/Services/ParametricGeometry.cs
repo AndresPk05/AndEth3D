@@ -6,25 +6,25 @@ namespace AndEth3D.Backend.Services;
 
 public static class ParametricGeometry
 {
-    public const string Version = "orthogonal-v1";
+    public const string Version = "orthogonal-v2";
     public static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
     public static string? Validate(DesignBrief b, ParametricParameters p, ManufacturingConfiguration config)
     {
         if (DesignPolicy.Assess(b,config).Status!="ReadyForReview") return "Completa una ficha compatible antes de crear el modelo.";
-        var category=p.Template switch {"box"=>"cajas","plate"=>"placas","organizer"=>"organizadores",_=>""};
+        var category=p.Template switch {"box"=>"cajas","plate"=>"placas","organizer"=>"organizadores","frame"=>"marcos",_=>""};
         if(category.Length==0 || category!=b.CategoryId) return "Esta categoría requiere modelado y revisión manual.";
         if(b.Colors!.Count!=1) return "Las plantillas automáticas admiten un solo color. Solicita revisión para varios colores.";
         if(b.Personalization?.Trim().ToLowerInvariant() is not ("sin personalización" or "sin personalizacion" or "ninguna" or "ninguno" or "no" or "sin"))
             return "Textos, logos y otros detalles personalizados requieren modelado manual.";
         if(p.WallMm is <.4m or >10 || p.BaseMm is <.4m or >10 || p.Columns is <1 or >6 || p.Rows is <1 or >6) return "Parámetros fuera del rango admitido.";
         if(p.Template!="organizer" && (p.Columns!=1 || p.Rows!=1)) return "Solo el organizador admite divisiones.";
-        if(p.Template!="plate" && (b.WidthMm-(p.Columns+1)*p.WallMm<2*p.Columns || b.DepthMm-(p.Rows+1)*p.WallMm<2*p.Rows || b.HeightMm<=p.BaseMm))
+        if(p.Template!="plate" && (b.WidthMm-(p.Columns+1)*p.WallMm<2*p.Columns || b.DepthMm-(p.Rows+1)*p.WallMm<2*p.Rows || (p.Template!="frame"&&b.HeightMm<=p.BaseMm)))
             return "Las paredes, divisiones y base no dejan espacio interior suficiente.";
         return null;
     }
     public static bool Fits(DesignBrief b,ParametricParameters p,PrinterProfile machine) => machine.Active && machine.MaterialIds.Contains(b.MaterialId!) &&
         b.WidthMm<=machine.WidthMm-2*machine.MarginMm && b.DepthMm<=machine.DepthMm-2*machine.MarginMm && b.HeightMm<=machine.HeightMm-machine.MarginMm &&
-        (p.Template=="plate" ? b.HeightMm>=machine.MinimumWallMm : p.WallMm>=machine.MinimumWallMm && p.BaseMm>=machine.MinimumWallMm);
+        (p.Template=="plate" ? b.HeightMm>=machine.MinimumWallMm : p.WallMm>=machine.MinimumWallMm && (p.Template=="frame" ? b.HeightMm>=machine.MinimumWallMm : p.BaseMm>=machine.MinimumWallMm));
 
     // Union of axis-aligned cells. Shared interior faces are removed; all surface
     // triangles share the same coordinate grid, avoiding coplanar overlaps/T-junctions.
@@ -39,10 +39,10 @@ public static class ParametricGeometry
         var wx=Walls(w,p.Template=="organizer"?p.Columns:1);var wy=Walls(d,p.Template=="organizer"?p.Rows:1);
         var xs=p.Template=="plate"?new[]{0m,w}:wx.SelectMany(r=>new[]{r.Start,r.End}).Distinct().Order().ToArray();
         var ys=p.Template=="plate"?new[]{0m,d}:wy.SelectMany(r=>new[]{r.Start,r.End}).Distinct().Order().ToArray();
-        var zs=p.Template=="plate"?new[]{0m,h}:new[]{0m,z,h};
+        var zs=p.Template is "plate" or "frame"?new[]{0m,h}:new[]{0m,z,h};
         int nx=xs.Length-1,ny=ys.Length-1,nz=zs.Length-1;
         bool Solid(int x,int y,int k) => x>=0&&x<nx&&y>=0&&y<ny&&k>=0&&k<nz &&
-            (p.Template=="plate" || k==0 || wx.Any(r=>xs[x]>=r.Start&&xs[x+1]<=r.End) || wy.Any(r=>ys[y]>=r.Start&&ys[y+1]<=r.End));
+            (p.Template=="plate" || (p.Template!="frame"&&k==0) || wx.Any(r=>xs[x]>=r.Start&&xs[x+1]<=r.End) || wy.Any(r=>ys[y]>=r.Start&&ys[y+1]<=r.End));
         var triangles=new List<(Vector3 A,Vector3 B,Vector3 C)>();
         void Face(Vector3 a,Vector3 b1,Vector3 c,Vector3 d1){triangles.Add((a,b1,c));triangles.Add((a,c,d1));}
         for(int x=0;x<nx;x++)for(int y=0;y<ny;y++)for(int k=0;k<nz;k++)if(Solid(x,y,k)){

@@ -20,7 +20,7 @@ async function load(){
   const turns=document.querySelector("#design-quote-turns")!;turns.replaceChildren();
   if(data.snapshot.parameters){
     const p=data.snapshot.parameters;
-    const templates:Record<string,string>={box:"Caja abierta",plate:"Placa lisa",organizer:"Organizador"};
+    const templates:Record<string,string>={box:"Caja abierta",plate:"Placa lisa",organizer:"Organizador",frame:"Marco rectangular"};
     document.querySelector("#design-quote-brief")!.textContent+=`\nPlantilla: ${templates[String(p.template)]??"Modelo"}\nParedes: ${p.wallMm} mm · Base: ${p.baseMm} mm · Divisiones: ${p.columns} × ${p.rows}`;
   }
   for(const t of data.snapshot.turns){const p=document.createElement("p");p.className="whitespace-pre-wrap text-sm";p.textContent=`Cliente: ${t.userText}\nAsistente: ${t.assistantText}`;turns.append(p);}

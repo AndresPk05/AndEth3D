@@ -2,12 +2,12 @@
   <h2 class="text-2xl font-bold mb-3">Crea un modelo 3D con una plantilla</h2>
   <p class="text-sm mb-5">Para cajas abiertas sin tapa, placas rectangulares lisas y organizadores abiertos con divisiones. Se usan las medidas de tu ficha, en un solo color. Los textos, logos, curvas, tapas y detalles de las imágenes requieren modelado manual.</p>
   <form id="parametric-form" class="grid sm:grid-cols-3 gap-4">
-    <label>Plantilla<select name="template" class="block border rounded p-2 w-full"><option value="box">Caja abierta</option><option value="plate">Placa lisa</option><option value="organizer">Organizador con divisiones</option></select></label>
+    <label>Plantilla<select name="template" class="block border rounded p-2 w-full"><option value="box">Caja abierta</option><option value="plate">Placa lisa</option><option value="organizer">Organizador con divisiones</option><option value="frame">Marco rectangular abierto</option></select></label>
     <label>Paredes (mm)<input name="wallMm" type="number" min="0.4" max="10" step="0.1" value="1.6" required class="block border rounded p-2 w-full" /></label>
     <label>Base (mm)<input name="baseMm" type="number" min="0.4" max="10" step="0.1" value="1.6" required class="block border rounded p-2 w-full" /></label>
     <label>Columnas del organizador<input name="columns" type="number" min="1" max="6" value="1" required class="block border rounded p-2 w-full" /></label>
     <label>Filas del organizador<input name="rows" type="number" min="1" max="6" value="1" required class="block border rounded p-2 w-full" /></label>
-    <p class="text-xs">En una placa, la altura de la ficha define el espesor. Paredes y base solo aplican a cajas y organizadores.</p>
+    <p class="text-xs">En una placa, la altura define el espesor. El marco no tiene fondo: usa paredes y altura, sin base ni divisiones. Requiere categoría Marcos habilitada.</p>
     <label class="sm:col-span-3 text-sm"><input id="parametric-accept" type="checkbox" required /> Acepto crear esta plantilla básica con las medidas de mi ficha. Entiendo que no reproduce detalles de la imagen ni otras instrucciones del chat.</label>
     <button id="parametric-create" disabled class="rounded-full bg-brand-600 text-white px-4 py-2 disabled:opacity-50">Crear modelo y calcular consumo</button>
     <button id="parametric-refresh" type="button" class="rounded-full border px-4 py-2">Actualizar</button>

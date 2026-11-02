@@ -12,7 +12,7 @@ public static class ParametricData
     public static readonly JsonSerializerOptions Json=new(JsonSerializerDefaults.Web);
     public static string Write(object value)=>JsonSerializer.Serialize(value,Json);
     public static T Read<T>(string value)=>JsonSerializer.Deserialize<T>(value,Json)!;
-    public static bool CurrentProfile(ParametricJob job,ParametricOptions options)=>job.ProfileJson is not null && options.Profiles.Any(p=>Write(p)==job.ProfileJson);
+    public static bool CurrentProfile(ParametricJob job,ParametricOptions options)=>job.ProfileJson is not null && options.Profiles.Any(p=>ParametricRouting.Identity(p)==ParametricRouting.Identity(Read<SlicingProfile>(job.ProfileJson)));
     public static DesignEstimate Estimate(DesignBrief b,ManufacturingConfiguration config,int version,SlicingProfile profile,decimal grams,decimal seconds)
     {
         var price=config.Pricing;var material=config.Materials.Single(m=>m.Id==b.MaterialId);

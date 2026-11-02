@@ -45,9 +45,9 @@ static class ParametricChecks
     {
         var brief=new DesignBrief{Object="Caja",Use="Organizar",CategoryId="cajas",MaterialId="pla",WidthMm=100,DepthMm=80,HeightMm=60,Quantity=2,Colors=["Negro"],Personalization="Sin personalización"};
         var box=new ParametricParameters("box",2,2);var organizer=new ParametricParameters("organizer",2,2,3,2);var plate=new ParametricParameters("plate",2,2);
-        foreach(var p in new[]{box,organizer,plate}){
+        foreach(var p in new[]{box,organizer,plate,new ParametricParameters("frame",2,2)}){
             var bytes=ParametricGeometry.Build(brief,p);
-            Mesh(bytes,p.Template=="plate"?480000:480000-(100-(p.Columns+1)*2)*(80-(p.Rows+1)*2)*58);
+            Mesh(bytes,p.Template=="plate"?480000:480000-(100-(p.Columns+1)*2)*(80-(p.Rows+1)*2)*(p.Template=="frame"?60:58));
             Check(bytes.SequenceEqual(ParametricGeometry.Build(brief,p)),"same parameters produce byte-identical STL");
         }
         Check(ParametricProfile.Safe("post_process = \nlayer_height = 0.2\n")&&!ParametricProfile.Safe("post_process = sh bad\n"),"profiles accept empty hooks and reject executable post-processing");

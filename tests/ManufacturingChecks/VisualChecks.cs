@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 
 class FakeImageGenerator : IImageGenerator
 {
+    public string? SelectedModel { get; private set; }
     public int Calls { get; private set; }
     public int RejectCount { get; set; }
     public bool Timeout { get; set; }
@@ -19,6 +20,7 @@ class FakeImageGenerator : IImageGenerator
     public decimal CostUsd { get; set; } = 0.01m;
     public Task<ImageCompletion> GenerateAsync(VisualSettings settings, string prompt, byte[]? reference, CancellationToken ct)
     {
+        SelectedModel = settings.Model;
         Calls++; ReceivedReference = reference is not null;
         if (Timeout) throw new OperationCanceledException();
         if (RejectCount-- > 0) throw new ImageProviderException("temporary", true);
@@ -65,6 +67,8 @@ static class VisualChecks
         Check((await client.GetAsync("/api/visual-settings")).StatusCode == HttpStatusCode.Forbidden, "visual settings restricted to admins");
         Role("Admin");
         var configuration = new VisualSettings {Enabled = true, Model = "test/image", SupportsEditing = true, MaxProposalsPerConversation = 10, ConversationBudgetUsd = 10, MaxAttemptsPerUserDay = 30};
+        configuration.Routing.Enabled = true;
+        configuration.Routing.Draft.ReservePerAttemptUsd = .25m;
         Check((await client.PutAsJsonAsync("/api/visual-settings", new {expectedVersion = 0, configuration})).IsSuccessStatusCode, "admin can configure image model and limits");
         Check((await client.PutAsJsonAsync("/api/visual-settings", new {expectedVersion = 0, configuration})).StatusCode == HttpStatusCode.Conflict, "image settings optimistic concurrency enforced");
         Role("Client");
@@ -74,6 +78,7 @@ static class VisualChecks
         Check((await Queue(conversationId, firstId)).IsSuccessStatusCode, "duplicate visual request is idempotent");
         Check((await Queue(conversationId, Guid.NewGuid())).StatusCode == HttpStatusCode.Conflict, "one active image job per conversation");
         Check(await Process(), "background processor claims durable job");
+        Check(generator.SelectedModel == configuration.Routing.Draft.Model, "worker uses frozen draft route");
         var state = await List(conversationId);
         Check(state.GetProperty("proposals")[0].GetProperty("status").GetString() == "Completed" && generator.Calls == 1, "job generates one completed proposal");
         Check(!state.GetRawText().Contains("test/image") && !state.GetRawText().Contains("reservedUsd") && !state.GetRawText().Contains("SecretBrand"), "visual response excludes model, costs and printer identity");

@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 namespace AndEth3D.Backend.Contracts;
 public record ParametricParameters(
-    [Required, RegularExpression("^(box|plate|organizer)$")] string Template,
+    [Required, RegularExpression("^(box|plate|organizer|frame)$")] string Template,
     [Range(0.4,10)] decimal WallMm, [Range(0.4,10)] decimal BaseMm,
     [Range(1,6)] int Columns = 1, [Range(1,6)] int Rows = 1);
 public record CreateParametricRequest(Guid RequestId,

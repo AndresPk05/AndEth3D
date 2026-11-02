@@ -51,9 +51,22 @@ static class ChatChecks
         client.DefaultRequestHeaders.Add("X-Test-Role", "Client");
         var id = await Create();
         agent.Patch = new() {Object = "Caja", Use = "Organizar en interior", CategoryId = "cajas", WidthMm = 100, DepthMm = 80, HeightMm = 60, Quantity = 1};
+        options.Routing.Enabled = true;
         var requestId = Guid.NewGuid();
         var sent = await Send(id, requestId);
         Check(sent.IsSuccessStatusCode, "send chat message");
+        using (var scope = services.CreateScope()) {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var reserved = await db.ChatTurns.SingleAsync(t => t.Id == requestId);
+            Check(reserved.ReservedUsd == ModelRouter.Chat(options, "Una caja").ReservationUsd, "chat reserves selected route before provider use");
+        }
+        var originalBudget = options.SessionBudgetUsd;
+        options.SessionBudgetUsd = ModelRouter.Chat(options, "Una caja").ReservationUsd + ModelRouter.Chat(options, "20 mm").ReservationUsd;
+        var beforeRejected = agent.Calls;
+        Check((await Send(id, Guid.NewGuid(), "encaje con tolerancia")).StatusCode == HttpStatusCode.TooManyRequests && agent.Calls == beforeRejected,
+            "insufficient complex-route budget blocks call without silent downgrade");
+        options.SessionBudgetUsd = originalBudget;
+        options.Routing.Enabled = false;
         var data = await sent.Content.ReadFromJsonAsync<JsonElement>();
         Check(data.GetProperty("brief").GetProperty("widthMm").GetDecimal() == 100, "design brief persisted");
         Check(!data.GetProperty("assessment").GetProperty("missing").EnumerateArray().Any(x => x.GetString() == "dimensions"), "confirmed dimensions not asked again");

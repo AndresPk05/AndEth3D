@@ -2,6 +2,8 @@ namespace AndEth3D.Backend.Services;
 
 public class ChatOptions
 {
+    public TextModelRouting Routing { get; set; } = new();
+    internal object Copy() => MemberwiseClone();
     public bool Enabled { get; set; }
     public string ApiKey { get; set; } = "";
     public string[] Models { get; set; } = [];
@@ -18,8 +20,8 @@ public class ChatOptions
     // Conservative token ceiling; failed/unknown calls retain their reservation.
     public decimal ReservationUsd => decimal.Ceiling(((MaxPromptBytes + 4096m) * MaxPromptUsdPerMillion +
         MaxOutputTokens * MaxCompletionUsdPerMillion) * Math.Max(1, Models.Length)) / 1_000_000m;
-    public bool Valid() => Models is not null && Models.Length <= 3 &&
-        (!Enabled || (!string.IsNullOrWhiteSpace(ApiKey) && Models.Length > 0)) &&
+    public bool Valid() => Routing is not null && (!Routing.Enabled || new[] { Routing.Simple, Routing.Standard, Routing.Complex }.All(r => r is not null && ModelRouter.Apply(this, r).Valid())) && Models is not null && Models.Length <= 3 &&
+        (!Enabled || (!string.IsNullOrWhiteSpace(ApiKey) && (Routing.Enabled || Models.Length > 0))) &&
         Models.All(m => !string.IsNullOrWhiteSpace(m) && m.Length <= 150) && TimeoutSeconds is >= 5 and <= 90 &&
         MaxOutputTokens is >= 400 and <= 4000 && MaxPromptBytes is >= 4000 and <= 64000 &&
         MaxTurns is >= 1 and <= 60 && MaxRequestsPerDay is >= 1 and <= 500 && MaxConversationsPerDay is >= 1 and <= 20 &&

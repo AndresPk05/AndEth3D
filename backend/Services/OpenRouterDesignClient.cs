@@ -16,7 +16,7 @@ public class OpenRouterDesignClient(HttpClient http, IOptions<ChatOptions> optio
 {
     public async Task<DesignCompletion> CompleteAsync(DesignBrief brief, object capabilities, IReadOnlyList<ChatTurn> history, string message, CancellationToken ct)
     {
-        var settings = options.Value;
+        var settings = ModelRouter.Chat(options.Value, message);
         var messages = new List<object> {
             new { role = "system", content = """
                 Eres el extractor de requisitos de AndEth3D. Solo interpreta ideas de objetos para impresión 3D.

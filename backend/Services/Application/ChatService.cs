@@ -53,7 +53,7 @@ public class ChatService(AppDbContext db, IDesignAgent agent, IOptions<ChatOptio
             c.Id, c.Title, brief, assessment = DesignPolicy.Assess(brief, config),
             busy = c.BusyUntil > DateTime.UtcNow,
             remainingTurns = Math.Max(0, Options.MaxTurns - c.Attempts),
-            budgetAvailable = c.ReservedUsd + Options.ReservationUsd <= Options.SessionBudgetUsd,
+            budgetAvailable = c.ReservedUsd + ModelRouter.MinimumReservation(Options) <= Options.SessionBudgetUsd,
             messages = turns.Select(t => new { t.Id, t.UserText,
                 assistantText = t.Status == "Processing" && (t.Sequence < c.Attempts || !(c.BusyUntil > DateTime.UtcNow)) ? FailedReply : t.AssistantText,
                 status = t.Status == "Processing" && (t.Sequence < c.Attempts || !(c.BusyUntil > DateTime.UtcNow)) ? "Failed" : t.Status })
@@ -72,21 +72,22 @@ public class ChatService(AppDbContext db, IDesignAgent agent, IOptions<ChatOptio
         var allowance = await Allowance();
         if (allowance.Requests >= Options.MaxRequestsPerDay || allowance.LastRequestAt?.AddSeconds(Options.MinimumIntervalSeconds) > now)
             return AppResult.RateLimited(new { message = "Alcanzaste el límite de uso o enviaste mensajes muy rápido. Intenta más tarde." });
-        if (c.Attempts >= Options.MaxTurns || c.ReservedUsd + Options.ReservationUsd > Options.SessionBudgetUsd)
+        var route = ModelRouter.Chat(Options, request.Message);
+        if (c.Attempts >= Options.MaxTurns || c.ReservedUsd + route.ReservationUsd > Options.SessionBudgetUsd)
             return AppResult.RateLimited(new { message = "Esta conversación alcanzó su límite. Tu ficha está guardada y puedes solicitar asesoría desde Cotizar." });
         var (revision, config) = await Configuration();
         var history = await db.ChatTurns.AsNoTracking().Where(t => t.ConversationId == id && t.Status == "Completed").OrderBy(t => t.Sequence).ToListAsync();
         // Reservation is committed BEFORE an external call and is never refunded on uncertain failures.
         var turn = new ChatTurn { Id = request.RequestId, ConversationId = id, Sequence = c.Attempts + 1,
-            UserText = request.Message.Trim(), ReservedUsd = Options.ReservationUsd, ManufacturingRevisionId = revision?.Id };
+            UserText = request.Message.Trim(), ReservedUsd = route.ReservationUsd, ManufacturingRevisionId = revision?.Id };
         db.ChatTurns.Add(turn);
         c.Attempts++; c.ReservedUsd += turn.ReservedUsd; c.Version++; c.UpdatedAt = now;
-        c.BusyUntil = now.AddSeconds(Options.TimeoutSeconds + 30);
+        c.BusyUntil = now.AddSeconds(route.TimeoutSeconds + 30);
         if (c.Attempts == 1) c.Title = turn.UserText[..Math.Min(80, turn.UserText.Length)];
         allowance.Requests++; allowance.Version++; allowance.LastRequestAt = now;
         if (!await SaveReservation()) return AppResult.Conflict(new { message = "Otra solicitud está en curso. Recarga la conversación." });
         // Independent of browser cancellation: persist the outcome even if the client disconnects.
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(Options.TimeoutSeconds));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(route.TimeoutSeconds));
         try {
             var before = DesignPolicy.Read(c.BriefJson);
             var result = await agent.CompleteAsync(before, DesignPolicy.PublicCapabilities(config), history, turn.UserText, timeout.Token).WaitAsync(timeout.Token);

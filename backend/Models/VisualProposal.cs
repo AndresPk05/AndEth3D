@@ -13,6 +13,7 @@ public class VisualSettingsRevision
 
 public class VisualSettings : IValidatableObject
 {
+    [Required] public ImageModelRouting Routing { get; set; } = new();
     public bool Enabled { get; set; }
     [StringLength(150)] public string Model { get; set; } = "";
     public bool SupportsEditing { get; set; }
@@ -27,6 +28,10 @@ public class VisualSettings : IValidatableObject
     public decimal ConversationBudgetUsd { get; set; } = 2;
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
+        if (Routing?.Enabled == true && new[] { Routing.Draft, Routing.Detailed, Routing.Edit }.Any(r => r is not null && r.ReservePerAttemptUsd * MaxAttempts > ConversationBudgetUsd))
+            yield return new("El presupuesto debe cubrir todas las rutas de imagen.");
+        if (Routing?.Enabled == true && Routing.Edit is not null && !Routing.Edit.SupportsEditing)
+            yield return new("La ruta de edición debe admitir referencias.");
         if (Enabled && (string.IsNullOrWhiteSpace(Model) || !Model.Contains('/')))
             yield return new("Selecciona un identificador de modelo de imágenes válido.");
         if (ConversationBudgetUsd < ReservePerAttemptUsd * MaxAttempts)

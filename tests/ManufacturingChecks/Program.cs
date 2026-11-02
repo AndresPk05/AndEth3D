@@ -18,6 +18,7 @@ using Microsoft.Extensions.Options;
 
 void Check(bool value, string name) { if (!value) throw new Exception(name); Console.WriteLine("PASS " + name); }
 ArchitectureChecks.Run();
+await ModelRoutingChecks.Run();
 // Validate the real PostgreSQL migration model without needing a running server.
 using (var pg = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql("Host=localhost;Database=checks").Options))
 {
@@ -120,6 +121,7 @@ await GatewayChecks.Run(client, app.Services);
 await VisualChecks.Run(client, app.Services, imageGenerator);
 await EstimationChecks.Run(client, app.Services);
 await ParametricChecks.Run(client, app.Services, parametricOptions, parametricSlicer);
+await OperationsChecks.Run(client, app.Services);
 
 class TestAuth(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)

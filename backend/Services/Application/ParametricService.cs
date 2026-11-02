@@ -44,10 +44,13 @@ public class ParametricService(AppDbContext db,ICurrentActor actor,IOptions<Para
         var stl=ParametricGeometry.Build(brief,request.Parameters);
         var job=new ParametricJob{Id=request.RequestId,ConversationId=id,ManufacturingRevisionId=revision.Id,BriefJson=c.BriefJson,Fingerprint=request.ExpectedFingerprint,
             ParametersJson=parameters,TemplateVersion=ParametricGeometry.Version,ModelStl=stl,ModelHash=ParametricGeometry.Hash(stl)};
-        var profile=options.Value.Profiles.OrderBy(p=>p.Id,StringComparer.Ordinal).FirstOrDefault(p=>p.MaterialId==brief.MaterialId&&config.Printers.Any(m=>m.Id==p.PrinterId&&ParametricGeometry.Fits(brief,request.Parameters,m)));
-        if(options.Value.Enabled&&profile is not null){
-            try{job.ProfileIni=await ParametricProfile.Read(profile);job.ProfileJson=ParametricData.Write(profile);job.Status="Queued";}
-            catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or ArgumentException){job.Status="ReviewRequired";job.Failure="ProfileUnavailable";}
+        var activeProfiles=await db.ParametricJobs.AsNoTracking().Where(j=>(j.Status=="Queued"||j.Status=="Processing")&&j.ProfileJson!=null).Select(j=>j.ProfileJson!).ToListAsync();
+        var loads=activeProfiles.Select(ParametricData.Read<SlicingProfile>).GroupBy(p=>p.PrinterId).ToDictionary(g=>g.Key,g=>g.Count());
+        if(options.Value.Enabled){
+            foreach(var profile in ParametricRouting.Candidates(options.Value.Profiles,config,brief,request.Parameters,loads)){
+                try{job.ProfileIni=await ParametricProfile.Read(profile);job.ProfileJson=ParametricData.Write(profile);job.Status="Queued";job.Failure=null;break;}
+                catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or ArgumentException){job.Status="ReviewRequired";job.Failure="ProfileUnavailable";}
+            }
         }
         db.ParametricJobs.Add(job);c.Version++;allowance.Count++;allowance.Version++;
         try{await db.SaveChangesAsync();}
@@ -88,7 +91,7 @@ public class ParametricService(AppDbContext db,ICurrentActor actor,IOptions<Para
     public async Task<AppResult> Admin()
     {
         var jobs=await db.ParametricJobs.AsNoTracking().OrderByDescending(j=>j.CreatedAt).Take(100).ToListAsync();
-        return AppResult.Ok(new{enabled=options.Value.Enabled,worker=options.Value.RunWorker,profiles=options.Value.Profiles.Select(p=>new{p.Id,p.PrinterId,p.MaterialId,p.ProfileSha256,p.EngineVersion,p.Image,p.TotalsVerified,p.UnreportedPurgeGrams}),
+        return AppResult.Ok(new{enabled=options.Value.Enabled,worker=options.Value.RunWorker,routingPolicy=ParametricRouting.Policy,profiles=options.Value.Profiles.Select(p=>new{p.Id,p.PrinterId,p.MaterialId,p.Priority,p.ProfileSha256,p.EngineVersion,p.Image,p.TotalsVerified,p.UnreportedPurgeGrams}),
             jobs=jobs.Select(j=>new{j.Id,j.Status,j.Failure,j.Version,j.CreatedAt,j.Grams,j.Seconds,j.ActualGrams,j.ActualSeconds,j.MeasurementNotes,j.MeasuredAt,j.MeasuredBy,j.ReproductionHash,
                 gramErrorPercent=j.Grams>0&&j.ActualGrams is not null?100*(j.ActualGrams-j.Grams)/j.Grams:null,
                 timeErrorPercent=j.Seconds>0&&j.ActualSeconds is not null?100*(j.ActualSeconds-j.Seconds)/j.Seconds:null})});

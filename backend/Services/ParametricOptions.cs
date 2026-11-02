@@ -14,6 +14,7 @@ public class ParametricOptions
 }
 public class SlicingProfile
 {
+    public int Priority { get; set; } = 100;
     public string Id { get; set; } = "";
     public string PrinterId { get; set; } = "";
     public string MaterialId { get; set; } = "";
@@ -29,5 +30,5 @@ public class SlicingProfile
         Path.IsPathFullyQualified(ProfilePath) && Regex.IsMatch(ProfileSha256,@"^[a-fA-F0-9]{64}$") &&
         Regex.IsMatch(Image,@"^[a-zA-Z0-9./:_-]+@sha256:[a-f0-9]{64}$") && EngineVersion.Length is >0 and <=100 &&
         EngineVersion.StartsWith("PrusaSlicer-2.",StringComparison.Ordinal) && TotalsVerified && UnreportedPurgeGrams is >=0 and <=1000 &&
-        DesignHours is >=0 and <=1000 && FinishingHours is >=0 and <=1000;
+        Priority is >=0 and <=1000 && DesignHours is >=0 and <=1000 && FinishingHours is >=0 and <=1000;
 }

@@ -4,12 +4,20 @@ const form = document.querySelector<HTMLFormElement>("#image-settings-form")!;
 const status = document.querySelector<HTMLElement>("#image-settings-status")!;
 const save = document.querySelector<HTMLButtonElement>("#save-image-settings")!;
 let version = 0;
+function readPath(value: Record<string, unknown>, path: string): unknown {
+  return path.split(".").reduce<unknown>((current, key) => (current as Record<string, unknown>)?.[key], value);
+}
+function writePath(value: Record<string, unknown>, path: string, data: unknown) {
+  const keys = path.split("."); let current = value;
+  for (const key of keys.slice(0, -1)) current = (current[key] ??= {}) as Record<string, unknown>;
+  current[keys[keys.length - 1]] = data;
+}
 async function load() {
   const result = await apiFetch<{version: number; keyConfigured: boolean; configuration: Record<string, unknown>}>("/api/visual-settings");
   version = result.version;
   for (const input of form.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[name]")) {
-    if (input instanceof HTMLInputElement && input.type === "checkbox") input.checked = Boolean(result.configuration[input.name]);
-    else input.value = String(result.configuration[input.name] ?? "");
+    if (input instanceof HTMLInputElement && input.type === "checkbox") input.checked = Boolean(readPath(result.configuration, input.name));
+    else input.value = String(readPath(result.configuration, input.name) ?? "");
   }
   form.classList.remove("hidden");
   status.textContent = `Versión ${version}. ${result.keyConfigured ? "Clave configurada en el servidor." : "Falta configurar la clave privada de OpenRouter en el servidor."}`;
@@ -35,7 +43,7 @@ form.addEventListener("submit", async event => {
   event.preventDefault(); save.disabled = true;
   const configuration: Record<string, unknown> = {};
   for (const input of form.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[name]"))
-    configuration[input.name] = input instanceof HTMLInputElement && input.type === "checkbox" ? input.checked : input instanceof HTMLInputElement && input.type === "number" ? Number(input.value) : input.value.trim();
+    writePath(configuration, input.name, input instanceof HTMLInputElement && input.type === "checkbox" ? input.checked : input instanceof HTMLInputElement && input.type === "number" ? Number(input.value) : input.value.trim());
   try {
     const result = await apiFetch<{version: number}>("/api/visual-settings", {method: "PUT", body: JSON.stringify({expectedVersion: version, configuration})});
     version = result.version; status.textContent = `Versión ${version} guardada. Las propuestas conservan la configuración con la que se solicitaron.`; await history();

@@ -34,6 +34,7 @@ public class VisualProposalProcessor(AppDbContext db, IImageGenerator generator,
                 await Finish(proposal, "Stale", null); return true;
             }
             var settings = VisualPolicy.Settings(await db.VisualSettingsRevisions.AsNoTracking().SingleAsync(r => r.Id == proposal.SettingsRevisionId, stoppingToken));
+            settings = ModelRouter.Image(settings, DesignPolicy.Read(proposal.BriefJson), proposal.ParentProposalId is not null);
             var attempts = VisualPolicy.Attempts(proposal);
             proposal.Status = "Processing"; proposal.AttemptCount++; proposal.Version++;
             proposal.LeaseUntil = now.AddSeconds(settings.TimeoutSeconds + 30);

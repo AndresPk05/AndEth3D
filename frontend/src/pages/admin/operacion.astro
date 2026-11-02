@@ -1,0 +1,46 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import AdminTabs from "../../components/AdminTabs.astro";
+const fields=[
+  ["quantity","Cantidad fabricada",1,10000,1], ["grams","Filamento total del lote (g)",0.01,100000000,0.01],
+  ["machineHours","Horas de máquina totales",0.01,1000000,0.01], ["designHours","Horas de diseño totales",0,1000,0.01],
+  ["finishingHours","Horas de acabado totales",0,1000000,0.01], ["materialCostCop","Costo real de material (COP)",0,1000000000,0.01],
+  ["machineCostCop","Costo real de máquina (COP)",0,1000000000,0.01], ["laborCostCop","Costo real de mano de obra (COP)",0,1000000000,0.01],
+  ["otherCostCop","Otros costos reales (COP)",0,1000000000,0.01]
+];
+---
+<Layout title="Admin - Operación y resultados">
+  <section class="max-w-6xl mx-auto px-4 py-10">
+    <AdminTabs />
+    <h1 class="text-3xl font-bold mb-4">Operación y resultados reales</h1>
+    <p id="operations-status" role="status" aria-live="polite">Cargando.</p>
+    <label>Período<select id="operations-days" class="border rounded p-2 m-3"><option value="7">7 días</option><option value="30" selected>30 días</option><option value="90">90 días</option><option value="365">365 días</option></select></label>
+    <button id="operations-refresh" type="button" class="border rounded-full px-4 py-2">Actualizar métricas</button>
+    <div id="operations-metrics" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 my-5"></div>
+    <div id="operations-categories" class="overflow-auto my-5"></div>
+    <details class="border rounded p-4 mb-6"><summary>Cómo leer los indicadores</summary><ul id="operations-definitions" class="list-disc pl-5 mt-3 text-sm"></ul></details>
+    <h2 class="text-2xl font-bold mb-3">Registrar producción</h2>
+    <p class="text-sm mb-3">Registra el lote completo cuando esté terminado o entregado. Incluye soportes, purga y desperdicio en el peso total. Los costos reales son internos y no cambian el precio del cliente. El registro es inmutable: revisa los valores antes de guardar.</p>
+    <form id="production-lookup" class="flex gap-3 my-4"><label>Pedido #<input id="production-order" type="number" min="1" step="1" required class="border rounded p-2 ml-2" /></label><button class="border rounded-full px-4 py-2">Cargar pedido</button></form>
+    <p id="production-status" role="status" class="my-3"></p>
+    <form id="production-form" class="hidden bg-white border rounded-2xl p-5 grid sm:grid-cols-3 gap-4">
+      <label>Categoría<select name="categoryId" required class="block w-full border rounded p-2"></select></label>
+      <label>Material<select name="materialId" required class="block w-full border rounded p-2"></select></label>
+      <label>Equipo usado<select name="printerId" required class="block w-full border rounded p-2"></select></label>
+      <label>Complejidad observada<select name="complexity" class="block w-full border rounded p-2"><option value="simple">Sencilla</option><option value="standard" selected>Media</option><option value="complex">Alta</option></select></label>
+      {fields.map(([name,label,min,max,step])=><label>{label}<input name={String(name)} type="number" min={min} max={max} step={step} required class="block w-full border rounded p-2" /></label>)}
+      <label class="sm:col-span-3">Referencia del trabajo, parámetros y observaciones<textarea name="notes" minlength="3" maxlength="2000" rows="3" required class="block w-full border rounded p-2"></textarea></label>
+      <label class="sm:col-span-3 text-sm"><input type="checkbox" required /> Revisé el lote y los costos; entiendo que estos datos quedarán como evidencia histórica.</label>
+      <button id="production-save" class="rounded-full bg-brand-600 text-white px-4 py-2">Guardar datos reales</button>
+    </form>
+    <h2 class="text-2xl font-bold mt-8 mb-3">Ajustar calibración con producción</h2>
+    <p class="text-sm mb-3">Selecciona solo trabajos comparables y representativos. Los consumos se normalizan por pieza; diseño queda por trabajo. Se crea una versión nueva sin alterar cotizaciones anteriores. Se requieren tres referencias comparables para estimaciones automáticas.</p>
+    <p id="production-calibration-status" role="status"></p>
+    <div id="production-candidates" class="my-4 space-y-2"></div>
+    <button id="production-promote" type="button" disabled class="rounded-full bg-brand-600 text-white px-4 py-2 disabled:opacity-50">Incorporar seleccionados a calibración</button>
+    <a href="/admin/estimacion" class="ml-3 underline">Revisar calibración completa</a>
+    <h2 class="text-2xl font-bold mt-8 mb-3">Últimos resultados del período</h2>
+    <div id="production-records" class="overflow-auto"></div>
+  </section>
+  <script>import "../../lib/operations";</script>
+</Layout>
