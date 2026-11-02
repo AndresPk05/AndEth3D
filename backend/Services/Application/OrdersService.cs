@@ -8,7 +8,7 @@ public class OrdersService(AppDbContext db, ICurrentActor actor)
 {
 
     private static OrderDto ToDto(Order o) => new(
-        o.Id, o.UserId, o.User.Name, o.User.Email,
+        o.Id, o.UserId, o.User?.Name ?? o.ContactName ?? "Visitante", o.User?.Email ?? o.ContactEmail ?? "",
         o.Title, o.Description, o.Price,
         o.Status, o.Notes, o.CreatedAt, o.UpdatedAt);
 

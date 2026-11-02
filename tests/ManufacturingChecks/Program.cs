@@ -53,9 +53,11 @@ builder.Services.AddSingleton<IDesignAgent>(designAgent);
 builder.Services.AddSingleton<IOptions<ChatOptions>>(Options.Create(chatOptions));
 builder.Services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, TestAuth>("Test", _ => {});
 builder.Services.AddAuthorization();
+builder.Services.AddGuestQuoteRateLimits();
 builder.Services.AddControllers().AddApplicationPart(typeof(ManufacturingController).Assembly);
 await using var app = builder.Build();
-app.UseAuthentication(); app.UseAuthorization(); app.MapControllers();
+app.UseAuthentication(); app.UseAuthorization();
+app.UseRateLimiter(); app.MapControllers();
 using (var scope = app.Services.CreateScope()) {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.EnsureCreatedAsync();
@@ -122,6 +124,7 @@ await VisualChecks.Run(client, app.Services, imageGenerator);
 await EstimationChecks.Run(client, app.Services);
 await ParametricChecks.Run(client, app.Services, parametricOptions, parametricSlicer);
 await OperationsChecks.Run(client, app.Services);
+await GuestQuoteChecks.Run(client, app.Services);
 
 class TestAuth(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)

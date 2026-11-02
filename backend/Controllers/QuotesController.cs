@@ -5,10 +5,14 @@ using AndEth3D.Backend.Models;
 using AndEth3D.Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 namespace AndEth3D.Backend.Controllers;
 [ApiController, Route("api/quotes")]
 public class QuotesController(QuotesService service) : ControllerBase
 {
+    [AllowAnonymous, HttpPost("guest"), EnableRateLimiting("guest-quotes"), RequestSizeLimit(6_000_000)]
+    public async Task<IActionResult> CreateGuest([FromForm] GuestQuoteRequest request) =>
+        (await service.CreateGuest(request)).ToHttp(this);
     [Authorize, HttpPost, RequestSizeLimit(21_000_000)]
     public async Task<IActionResult> Create(
         [FromForm, Required, StringLength(5000)] string description,

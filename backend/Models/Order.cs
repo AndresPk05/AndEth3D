@@ -3,8 +3,10 @@ namespace AndEth3D.Backend.Models;
 public class Order
 {
     public int Id { get; set; }
-    public int UserId { get; set; }
-    public User User { get; set; } = null!;
+    public int? UserId { get; set; }
+    public User? User { get; set; }
+    public string? ContactName { get; set; }
+    public string? ContactEmail { get; set; }
     public int? QuoteRequestId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

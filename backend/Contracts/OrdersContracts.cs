@@ -3,7 +3,7 @@ using AndEth3D.Backend.Models;
 namespace AndEth3D.Backend.Contracts;
 
 public record OrderDto(
-        int Id, int UserId, string UserName, string UserEmail,
+        int Id, int? UserId, string UserName, string UserEmail,
         string Title, string Description, decimal? Price,
         string Status, string? Notes, DateTime CreatedAt, DateTime UpdatedAt);
 

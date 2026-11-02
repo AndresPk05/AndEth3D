@@ -9,9 +9,41 @@ public class QuotesService(AppDbContext db, FileStorage storage, ICurrentActor a
 {
 
     private static QuoteDto ToDto(QuoteRequest q) => new(
-        q.Id, q.UserId, q.User.Name, q.User.Email,
+        q.Id, q.UserId, q.User?.Name ?? q.ContactName ?? "Visitante", q.User?.Email ?? q.ContactEmail ?? "",
         q.Description, q.Material, q.ReferenceFileUrl,
         q.Status, q.AdminNotes, q.CreatedAt, q.DesignSnapshotJson is not null, q.ConfirmedPriceCop);
+
+    private static readonly SemaphoreSlim GuestGate = new(1, 1);
+    public async Task<AppResult> CreateGuest(GuestQuoteRequest request)
+    {
+        var errors = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        if (!System.ComponentModel.DataAnnotations.Validator.TryValidateObject(request, new(request), errors, true))
+            return AppResult.Invalid(new { message = "Revisa el nombre, correo y descripción de tu solicitud." });
+        if (request.ReferenceFile?.Length > 5_000_000)
+            return AppResult.Invalid(new { message = "El archivo supera los 5 MB permitidos para visitantes." });
+        var email = request.ContactEmail.Trim().ToLowerInvariant();
+        await GuestGate.WaitAsync();
+        try {
+            var since = DateTime.UtcNow.AddDays(-1);
+            var recent = db.QuoteRequests.Where(q => q.UserId == null && q.CreatedAt >= since);
+            if (await recent.CountAsync() >= 100 || await recent.CountAsync(q => q.ContactEmail == email) >= 3)
+                return AppResult.RateLimited(new { message = "Alcanzaste el límite de solicitudes. Intenta de nuevo más tarde." });
+            var revision = await db.ManufacturingRevisions.AsNoTracking().OrderByDescending(r => r.Version).FirstOrDefaultAsync();
+            var material = request.Material.Trim();
+            if (material != "No estoy seguro" && (revision is null || !ManufacturingService.Read(revision).AvailableMaterials().Any(m => m.Name == material)))
+                return AppResult.Invalid(new { message = "El material ya no está disponible. Actualiza el catálogo o solicita asesoría." });
+            var quote = new QuoteRequest {
+                ContactName = request.ContactName.Trim(), ContactEmail = email,
+                Description = request.Description.Trim(), Material = material, ManufacturingRevisionId = revision?.Id
+            };
+            // Never associate unverified contact email with an existing account.
+            if (request.ReferenceFile is not null) quote.ReferenceFileUrl = await storage.SaveAsync(request.ReferenceFile, privateFile: true);
+            db.QuoteRequests.Add(quote);
+            await db.SaveChangesAsync();
+            return AppResult.Ok(new { message = "Recibimos tu solicitud. Te contactaremos al correo indicado." });
+        }
+        finally { GuestGate.Release(); }
+    }
 
     private int CurrentUserId => actor.Id;
     public async Task<AppResult> Create(
@@ -96,8 +128,10 @@ public class QuotesService(AppDbContext db, FileStorage storage, ICurrentActor a
         var order = new Order
         {
             UserId = quote.UserId,
+            ContactName = quote.ContactName,
+            ContactEmail = quote.ContactEmail,
             QuoteRequestId = quote.Id,
-            Title = string.IsNullOrWhiteSpace(request.Title) ? $"Pedido de {quote.User.Name}" : request.Title,
+            Title = string.IsNullOrWhiteSpace(request.Title) ? $"Pedido de {quote.User?.Name ?? quote.ContactName}" : request.Title,
             Description = quote.Description,
             Price = quote.DesignSnapshotJson is not null ? quote.ConfirmedPriceCop : request.Price,
             Notes = request.Notes,

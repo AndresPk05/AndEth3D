@@ -3,8 +3,10 @@ namespace AndEth3D.Backend.Models;
 public class QuoteRequest
 {
     public int Id { get; set; }
-    public int UserId { get; set; }
-    public User User { get; set; } = null!;
+    public int? UserId { get; set; }
+    public User? User { get; set; }
+    public string? ContactName { get; set; }
+    public string? ContactEmail { get; set; }
     public string Description { get; set; } = string.Empty;
     public string Material { get; set; } = string.Empty;
     public int? ManufacturingRevisionId { get; set; }

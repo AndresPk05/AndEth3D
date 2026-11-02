@@ -76,6 +76,7 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddGuestQuoteRateLimits();
 
 builder.Services.AddCors(options =>
 {
@@ -129,6 +130,7 @@ app.UseCors("frontend");
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 
 app.Run();
