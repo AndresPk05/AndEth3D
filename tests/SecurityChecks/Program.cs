@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 
 void Check(bool condition, string name) { if (!condition) throw new Exception(name); Console.WriteLine("PASS " + name); }
+ManufacturingChecks.Run();
 Check(OrderStatus.CanTransition(OrderStatus.Pending, OrderStatus.InQueue), "queue transition");
 Check(!OrderStatus.CanTransition(OrderStatus.Pending, OrderStatus.Delivered), "cannot skip workflow");
 Check(!OrderStatus.CanTransition(OrderStatus.Delivered, OrderStatus.Printing), "terminal state");

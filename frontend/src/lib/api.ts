@@ -66,7 +66,7 @@ export async function apiFetch<T = unknown>(
   if (res.status === 204) return null as T;
 
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message || `Error ${res.status}`);
+  if (!res.ok) throw new Error(data?.message || (data?.errors ? Object.values(data.errors).flat().join(" ") : `Error ${res.status}`));
   return data as T;
 }
 

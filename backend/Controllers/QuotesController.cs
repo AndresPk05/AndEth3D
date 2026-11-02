@@ -34,11 +34,20 @@ public class QuotesController(AppDbContext db, FileStorage storage) : Controller
         [FromForm, Required, StringLength(100)] string material,
         [FromForm] IFormFile? referenceFile)
     {
+        var revision = await db.ManufacturingRevisions.AsNoTracking().OrderByDescending(r => r.Version).FirstOrDefaultAsync();
+        if (material != "No estoy seguro")
+        {
+            var selected = revision is null ? null : ManufacturingController.Read(revision).AvailableMaterials()
+                .FirstOrDefault(m => string.Equals(m.Name, material, StringComparison.Ordinal));
+            if (selected is null) return BadRequest(new { message = "El material ya no está disponible. Actualice el catálogo o solicite asesoría." });
+            material = selected.Name;
+        }
         var quote = new QuoteRequest
         {
             UserId = CurrentUserId,
             Description = description,
             Material = material,
+            ManufacturingRevisionId = revision?.Id,
         };
 
         if (referenceFile is not null)

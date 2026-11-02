@@ -75,3 +75,27 @@ npm --prefix frontend run build
 ```
 
 Las pruebas de seguridad no requieren paquetes externos. La compilaci�n completa requiere restaurar las dependencias de NuGet y npm. Antes de publicar, prueba contra PostgreSQL: solicitudes simult�neas de conversi�n (un solo pedido), descarga por propietario/admin y rechazo de otro cliente, logout seguido de reutilizaci�n del token (401), y transici�n inv�lida (409).
+
+## Fabricación y precios (fase 1)
+
+- Panel: `/admin/fabricacion`, exclusivo para administradores. Configura equipos FDM, dimensiones nominales en mm, margen, boquilla instalada, pared mínima, colores simultáneos y materiales compatibles.
+- El volumen útil previsto resta dos márgenes en ancho/fondo y uno en altura; no sustituye una validación geométrica ni de orientación.
+- Registra costo por kilogramo en COP, materiales habilitados y colores disponibles. Un material se ofrece únicamente si está habilitado, tiene algún color disponible y existe un equipo activo compatible.
+- Configura categorías, tarifas por hora de máquina/diseño/acabado, pedido mínimo y margen bruto. La hora de máquina incluye electricidad, mantenimiento y depreciación. Esta fase almacena tarifas; aún no calcula presupuestos.
+- La configuración inicial propone una A1 y materiales PLA/PETG, todos desactivados. Los costos empiezan en cero y deben completarse con valores reales antes de guardar. No se asumen stock ni accesorios multicolor.
+- Cada guardado publica una revisión completa e inmutable. El número de versión evita sobrescrituras de administradores concurrentes; las revisiones tienen índice único en PostgreSQL. Se pueden consultar las últimas 100 versiones desde el panel y cualquier versión por su número desde la API.
+- Cada nueva cotización referencia la revisión vigente al recibirse. Las tarifas históricas no cambian y las cotizaciones previas a la configuración conservan una referencia nula. El administrador puede consultar las condiciones desde cada cotización. Los pedidos mantienen su vínculo con la cotización existente.
+- El catálogo público usa una lista explícita de campos: materiales, colores disponibles y categorías. No devuelve impresoras, marca/modelo, costos, tarifas ni identificadores de revisiones. Las condiciones históricas solo son accesibles para administradores.
+- `/cotizar` consume el catálogo y el backend rechaza materiales deshabilitados o inexistentes. La opción de asesoría sigue disponible aunque no haya catálogo o falle su carga.
+- La migración `20261102000002_ManufacturingConfiguration` agrega la tabla de revisiones y una FK nullable con borrado restringido. No altera datos ni precios existentes. Se aplica mediante el arranque habitual; respaldar antes de actualizar producción.
+- No incluye chat, OpenRouter, generación de imágenes, selección de color en cotizaciones ni estimaciones automáticas: corresponden a las siguientes fases. Otras tecnologías requieren su propio cálculo antes de habilitarlas.
+
+Comprobaciones adicionales:
+
+```powershell
+dotnet run --project tests/ManufacturingChecks/ManufacturingChecks.csproj
+dotnet run --project tests/SecurityChecks/SecurityChecks.csproj
+npm --prefix frontend test
+```
+
+Las pruebas de integración usan ASP.NET TestServer y SQLite en memoria para permisos, validación, catálogo y conservación de condiciones. También comparan el snapshot con el modelo PostgreSQL y generan el SQL de migración sin conectarse a una base de datos. No sustituyen probar la migración y escrituras concurrentes contra PostgreSQL antes de desplegar.

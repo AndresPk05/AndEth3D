@@ -22,6 +22,27 @@ namespace AndEth3D.Backend.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AndEth3D.Backend.Models.ManufacturingRevision", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("integer");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<int>("Version").HasColumnType("integer");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<int>("CreatedByUserId").HasColumnType("integer");
+                    b.Property<string>("ConfigurationJson").IsRequired().HasColumnType("text");
+                    b.HasKey("Id");
+                    b.HasIndex("Version").IsUnique();
+                    b.ToTable("ManufacturingRevisions");
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.QuoteRequest", b =>
+                {
+                    b.Property<int?>("ManufacturingRevisionId").HasColumnType("integer");
+                    b.HasIndex("ManufacturingRevisionId");
+                    b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null).WithMany()
+                        .HasForeignKey("ManufacturingRevisionId").OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("AndEth3D.Backend.Models.GalleryItem", b =>
                 {
                     b.Property<int>("Id")

@@ -14,6 +14,7 @@ import AdminTabs from "../../components/AdminTabs.astro";
 
   <script>
     import { downloadQuote, escapeHtml, apiFetch, requireAuth } from "../../lib/api";
+    import { manufacturingSummary } from "../../lib/manufacturing-summary";
 
     requireAuth("Admin");
 
@@ -77,11 +78,19 @@ import AdminTabs from "../../components/AdminTabs.astro";
                 <button class="convert-btn px-4 py-2 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition">Convertir en pedido</button>` : ""}
             </div>
             <p class="feedback hidden text-xs mt-2 font-semibold"></p>
+            <button type="button" class="config-btn mt-3 text-sm text-brand-700 underline">Ver condiciones de fabricación guardadas</button>
+            <pre class="config-detail hidden mt-3 text-xs overflow-auto bg-brand-50 rounded-xl p-3"></pre>
           </article>`).join("")
         : `<p class="text-ink-soft">No hay cotizaciones todavía.</p>`;
 
       container.querySelectorAll<HTMLElement>("article").forEach((card) => {
         const id = Number(card.dataset.id);
+        card.querySelector(".config-btn")!.addEventListener("click", async () => {
+          const detail = card.querySelector<HTMLElement>(".config-detail")!;
+          detail.classList.remove("hidden");
+          try { detail.textContent = manufacturingSummary(await apiFetch(`/api/manufacturing/quotes/${id}`)); }
+          catch (err) { detail.textContent = (err as Error).message; }
+        });
         card.querySelector(".download-btn")?.addEventListener("click", async () => {
           try { await downloadQuote(id); } catch (err) { alert((err as Error).message); }
         });

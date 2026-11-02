@@ -7,6 +7,7 @@ public class QuoteRequest
     public User User { get; set; } = null!;
     public string Description { get; set; } = string.Empty;
     public string Material { get; set; } = string.Empty;
+    public int? ManufacturingRevisionId { get; set; }
     public string? ReferenceFileUrl { get; set; }
     public string Status { get; set; } = QuoteStatus.Pending;
     public string? AdminNotes { get; set; }

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.0" />
+    <Compile Include="../../backend/Models/*.cs" Link="Models/%(Filename)%(Extension)" />
+    <Compile Include="../../backend/Data/AppDbContext.cs" Link="AppDbContext.cs" />
+    <Compile Include="../../backend/Controllers/ManufacturingController.cs" Link="ManufacturingController.cs" />
+    <Compile Include="../../backend/Controllers/QuotesController.cs" Link="QuotesController.cs" />
+    <Compile Include="../../backend/Services/FileStorage.cs" Link="FileStorage.cs" />
+    <Compile Include="../../backend/Migrations/*.cs" Link="Migrations/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
