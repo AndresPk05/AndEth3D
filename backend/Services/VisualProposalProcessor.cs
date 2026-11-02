@@ -30,7 +30,7 @@ public class VisualProposalProcessor(AppDbContext db, IImageGenerator generator,
             }
             var manufacturing = await db.ManufacturingRevisions.AsNoTracking().OrderByDescending(r => r.Version).FirstOrDefaultAsync(stoppingToken);
             if (VisualPolicy.Fingerprint(conversation.BriefJson) != proposal.BriefFingerprint || manufacturing?.Id != proposal.ManufacturingRevisionId ||
-                DesignPolicy.Assess(DesignPolicy.Read(proposal.BriefJson), ManufacturingService.Read(manufacturing!)).Status != "ReadyForReview") {
+                !VisualPolicy.CanPreview(DesignPolicy.Read(proposal.BriefJson))) {
                 await Finish(proposal, "Stale", null); return true;
             }
             var settings = VisualPolicy.Settings(await db.VisualSettingsRevisions.AsNoTracking().SingleAsync(r => r.Id == proposal.SettingsRevisionId, stoppingToken));

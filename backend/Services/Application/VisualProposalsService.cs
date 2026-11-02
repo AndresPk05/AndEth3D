@@ -18,7 +18,7 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
         var manufacturing = await db.ManufacturingRevisions.AsNoTracking().OrderByDescending(r => r.Version).FirstOrDefaultAsync();
         var usage = await db.VisualConversationUsages.AsNoTracking().SingleOrDefaultAsync(u => u.ConversationId == conversationId);
         var fingerprint = VisualPolicy.Fingerprint(conversation.BriefJson);
-        var ready = manufacturing is not null && DesignPolicy.Assess(DesignPolicy.Read(conversation.BriefJson), ManufacturingService.Read(manufacturing)).Status == "ReadyForReview";
+        var ready = VisualPolicy.CanPreview(DesignPolicy.Read(conversation.BriefJson));
         var enabled = config.Enabled && !string.IsNullOrWhiteSpace(credentials.Value.ApiKey);
         var budget = (usage?.ChargedUsd ?? 0) + config.ReservePerAttemptUsd * config.MaxAttempts <= config.ConversationBudgetUsd &&
             (usage?.ProposalCount ?? 0) < config.MaxProposalsPerConversation;
@@ -29,12 +29,12 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
         return AppResult.Ok(new {
             enabled, supportsEditing = config.Routing.Enabled ? config.Routing.Edit.SupportsEditing : config.SupportsEditing, fingerprint,
             canGenerate = enabled && ready && budget && usage?.ActiveProposalId is null && !(conversation.BusyUntil > DateTime.UtcNow),
-            reason = !enabled ? "La generación de imágenes no está disponible por ahora." : !ready ? "Completa la ficha y resuelve los detalles pendientes para generar una imagen." :
+            reason = !enabled ? "La generación de imágenes no está disponible por ahora." : !ready ? "Describe tu idea para preparar una imagen preliminar." :
                 !budget ? "Alcanzaste el límite de propuestas de esta conversación." : usage?.ActiveProposalId is not null ? "Tu propuesta está en preparación." : "Puedes generar una vista conceptual de tu ficha actual.",
             proposals = proposals.Select(p => new { p.Id, p.Number, p.ParentProposalId, p.Status, p.CreatedAt, p.CompletedAt,
                 outdated = p.BriefFingerprint != fingerprint || p.ManufacturingRevisionId != manufacturing?.Id,
                 brief = DesignPolicy.Read(p.BriefJson),
-                materialName = historicalConfigurations[p.ManufacturingRevisionId].Materials.FirstOrDefault(m => m.Id == DesignPolicy.Read(p.BriefJson).MaterialId)?.Name ?? "Material seleccionado",
+                materialName = historicalConfigurations.GetValueOrDefault(p.ManufacturingRevisionId ?? 0, new()).Materials.FirstOrDefault(m => m.Id == DesignPolicy.Read(p.BriefJson).MaterialId)?.Name ?? "Material sugerido, pendiente de revisión",
                 imageUrl = p.Status == "Completed" ? $"/api/chat/conversations/{conversationId}/visuals/{p.Id}/image" : null,
                 message = p.Status == "Failed" ? VisualPolicy.FailureMessage(p.FailureCode) : p.Status == "Completed" ? "Vista conceptual; requiere validación técnica." : "Preparando tu propuesta…"
             })
@@ -54,10 +54,14 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
         var fingerprint = VisualPolicy.Fingerprint(conversation.BriefJson);
         if (conversation.BusyUntil > DateTime.UtcNow || fingerprint != request.ExpectedFingerprint)
             return AppResult.Conflict(new { message = "La ficha cambió o se está actualizando. Revísala antes de generar la imagen." });
+        if (request.AutoPreview) {
+            var existing = await db.VisualProposals.AsNoTracking().FirstOrDefaultAsync(p => p.ConversationId == conversationId && p.BriefFingerprint == fingerprint);
+            if (existing is not null) return AppResult.Ok(new { id = existing.Id });
+        }
         var manufacturing = await db.ManufacturingRevisions.AsNoTracking().OrderByDescending(r => r.Version).FirstOrDefaultAsync();
         var brief = DesignPolicy.Read(conversation.BriefJson);
-        if (manufacturing is null || DesignPolicy.Assess(brief, ManufacturingService.Read(manufacturing)).Status != "ReadyForReview")
-            return AppResult.Invalid(new { message = "Completa la ficha y ajusta las opciones incompatibles antes de generar una propuesta." });
+        if (!VisualPolicy.CanPreview(brief))
+            return AppResult.Invalid(new { message = "Describe qué objeto quieres crear para preparar una vista preliminar." });
         settings = ModelRouter.Image(settings, brief, request.ParentProposalId is not null);
         if (request.ParentProposalId is not null) {
             if (!settings.SupportsEditing) return AppResult.Invalid(new { message = "El modelo configurado no admite editar una imagen anterior." });
@@ -76,8 +80,8 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
         if (daily.ReservedAttempts + settings.MaxAttempts > settings.MaxAttemptsPerUserDay)
             return AppResult.RateLimited(new { message = "Alcanzaste el límite diario de imágenes. Tus propuestas siguen guardadas." });
         var proposal = new VisualProposal { Id = request.RequestId, ConversationId = conversationId, Number = usage.ProposalCount + 1,
-            ParentProposalId = request.ParentProposalId, ManufacturingRevisionId = manufacturing.Id, SettingsRevisionId = settingsRevision!.Id,
-            BriefJson = DesignPolicy.Write(brief), BriefFingerprint = fingerprint, Prompt = VisualPolicy.Prompt(brief, ManufacturingService.Read(manufacturing)), ReservedUsd = reservation };
+            ParentProposalId = request.ParentProposalId, ManufacturingRevisionId = manufacturing?.Id, SettingsRevisionId = settingsRevision!.Id,
+            BriefJson = DesignPolicy.Write(brief), BriefFingerprint = fingerprint, Prompt = VisualPolicy.Prompt(brief, manufacturing is null ? new() : ManufacturingService.Read(manufacturing)), ReservedUsd = reservation };
         db.VisualProposals.Add(proposal);
         usage.Version++; usage.ProposalCount++; usage.ChargedUsd += reservation; usage.ActiveProposalId = proposal.Id;
         daily.Version++; daily.ReservedAttempts += settings.MaxAttempts;

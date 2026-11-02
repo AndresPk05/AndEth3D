@@ -127,6 +127,7 @@ await ParametricChecks.Run(client, app.Services, parametricOptions, parametricSl
 await OperationsChecks.Run(client, app.Services);
 await GuestDesignChecks.Run(client, app.Services);
 await GuestQuoteChecks.Run(client, app.Services);
+await ConceptualDesignChecks.Run(client, app.Services);
 
 class TestAuth(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)

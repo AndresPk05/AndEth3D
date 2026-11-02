@@ -48,7 +48,7 @@ public class VisualProposal
     public int Number { get; set; }
     public int Version { get; set; }
     public Guid? ParentProposalId { get; set; }
-    public int ManufacturingRevisionId { get; set; }
+    public int? ManufacturingRevisionId { get; set; }
     public int SettingsRevisionId { get; set; }
     public string BriefJson { get; set; } = "{}";
     public string BriefFingerprint { get; set; } = "";

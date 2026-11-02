@@ -82,6 +82,13 @@ async function reload() {
     const pending = sessionStorage.getItem(pendingKey());
     if (pending) { try { if (state.proposals.some(p => p.id === JSON.parse(pending).requestId)) sessionStorage.removeItem(pendingKey()); } catch { sessionStorage.removeItem(pendingKey()); } }
     render();
+    const autoKey = `andeth-preview-${active}-${state.fingerprint}`;
+    if (!chatBusy && !posting && state.canGenerate && !state.proposals.some(p => !p.outdated) && !sessionStorage.getItem(autoKey)) {
+      sessionStorage.setItem(autoKey, "requested");
+      const previous = state.proposals.find(p => p.status === "Completed");
+      if (previous && state.supportsEditing) parent.value = previous.id;
+      void requestPreview(true);
+    }
     document.dispatchEvent(new CustomEvent("design:visuals"));
     if (state.proposals.some(p => p.status === "Queued" || p.status === "Processing")) poll = setTimeout(reload, 3000);
   } catch (e) {
@@ -103,10 +110,10 @@ document.addEventListener("design:conversation", event => {
 });
 parent.addEventListener("change", controls);
 refresh.addEventListener("click", () => void reload());
-generate.addEventListener("click", async () => {
+async function requestPreview(autoPreview = false) {
   if (!state || generate.disabled) return;
   const active = conversationId;
-  let request = {requestId: crypto.randomUUID(), expectedFingerprint: state.fingerprint, parentProposalId: parent.value || null};
+  let request = {requestId: crypto.randomUUID(), expectedFingerprint: state.fingerprint, parentProposalId: parent.value || null, autoPreview};
   const storageKey = pendingKey();
   const pending = sessionStorage.getItem(storageKey);
   if (pending) { try { const saved = JSON.parse(pending); if (saved.expectedFingerprint === request.expectedFingerprint && saved.parentProposalId === request.parentProposalId) request = saved; } catch {} }
@@ -118,5 +125,6 @@ generate.addEventListener("click", async () => {
     if (active === conversationId) { selectedId = result.id; await reload(); }
   } catch (e) { if (active === conversationId) status.textContent = `${(e as Error).message} Puedes actualizar las propuestas para comprobar si la solicitud quedó guardada.`; }
   finally { posting = false; controls(); }
-});
+}
+generate.addEventListener("click", () => void requestPreview());
 window.addEventListener("pagehide", () => { clearTimeout(poll); releaseImage(); });

@@ -52,7 +52,7 @@ function render(data: Conversation) {
     showMessage(turn.status === "Processing" ? "Estoy organizando los detalles de tu idea…" : turn.assistantText, false);
   }
   choices.replaceChildren();
-  for (const text of data.assessment.suggestions) {
+  for (const text of (data.brief.object ? ["Hazlo más pequeño", "Quiero cambiar el color", "Me gustan los detalles sugeridos"] : data.assessment.suggestions)) {
     const button = document.createElement("button"); button.type = "button"; button.textContent = text;
     button.className = "rounded-full border border-brand-200 text-sm px-3 py-2 hover:bg-brand-50 disabled:opacity-50";
     button.addEventListener("click", () => { input.value = text; input.focus(); }); choices.append(button);
@@ -68,11 +68,16 @@ function render(data: Conversation) {
     const dt = document.createElement("dt"); dt.className = "font-semibold"; dt.textContent = label;
     const dd = document.createElement("dd"); dd.className = "text-ink-soft break-words whitespace-pre-wrap";
     dd.textContent = value == null || value === "" ? "Por definir" : Array.isArray(value) ? value.join(", ") : String(value);
+    if ((data.brief.suggestedFields as string[] ?? []).includes(field)) {
+      const badge = document.createElement("span"); badge.textContent = " · Sugerido";
+      badge.className = "text-amber-700 font-semibold"; dt.append(badge);
+    }
     row.append(dt, dd); sheet.append(row);
-    if (value != null && value !== "") briefLines.push(`${label}: ${dd.textContent}`);
+    if (value != null && value !== "") briefLines.push(`${label}${(data.brief.suggestedFields as string[] ?? []).includes(field) ? " (sugerido)" : ""}: ${dd.textContent}`);
   }
+  document.querySelector("#brief-summary")!.textContent = `${data.brief.object ?? "Tu idea"}. ${data.brief.widthMm && data.brief.depthMm && data.brief.heightMm ? `Tamaño inicial: ${data.brief.widthMm} × ${data.brief.depthMm} × ${data.brief.heightMm} mm. ` : "Estamos proponiendo el tamaño. "}${(data.brief.suggestedFields as string[] ?? []).length ? "Incluye sugerencias del asistente; puedes cambiarlas en el chat." : "Puedes pedir cambios en el chat."}`;
   document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: briefLines.join("\n")}}));
-  document.querySelector("#brief-state")!.textContent = {Collecting: "Estamos completando los detalles", NeedsReview: "Hay detalles que debemos revisar", ReadyForReview: "Ficha completa para revisión"}[data.assessment.status] ?? "En preparación";
+  document.querySelector("#brief-state")!.textContent = {Collecting: "Estamos preparando tu primera versión", NeedsReview: "Concepto listo para explorar; fabricación pendiente", ReadyForReview: "Primera versión lista: puedes pedir cambios"}[data.assessment.status] ?? "En preparación";
   const issues = document.querySelector("#design-issues")!; issues.replaceChildren();
   for (const text of data.assessment.issues) { const li = document.createElement("li"); li.textContent = text; issues.append(li); }
   const pending = sessionStorage.getItem(key());
@@ -102,6 +107,7 @@ async function list(reset = false) {
 function fresh() {
   clearTimeout(timer); active = ""; current = null; select.value = ""; input.value = "";
   messages.replaceChildren(); showMessage("¿Qué te gustaría crear? Cuéntame tu idea y para qué la necesitas.", false);
+  document.querySelector("#brief-summary")!.textContent = "Describe el objeto y prepararemos una propuesta inicial.";
   document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: ""}}));
   choices.replaceChildren(); document.querySelector("#design-brief")!.replaceChildren(); document.querySelector("#design-issues")!.replaceChildren();
   document.querySelector("#brief-state")!.textContent = "Se completará mientras conversamos.";

@@ -712,7 +712,7 @@ namespace AndEth3D.Backend.Migrations
                     b.Property<DateTime?>("LeaseUntil")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("ManufacturingRevisionId")
+                    b.Property<int?>("ManufacturingRevisionId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("NextAttemptAt")
@@ -941,8 +941,7 @@ namespace AndEth3D.Backend.Migrations
                     b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null)
                         .WithMany()
                         .HasForeignKey("ManufacturingRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("AndEth3D.Backend.Models.VisualProposal", null)
                         .WithMany()

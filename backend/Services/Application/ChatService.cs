@@ -95,6 +95,10 @@ public class ChatService(AppDbContext db, IDesignAgent agent, IOptions<ChatOptio
             var assessment = DesignPolicy.Assess(updated, config);
             c.BriefJson = DesignPolicy.Write(updated); turn.BriefJson = c.BriefJson;
             turn.AssistantText = (result.Patch.OffTopic ? "Puedo ayudarte a definir objetos para impresión 3D. " : "") + assessment.Question;
+            if (!result.Patch.OffTopic && !string.IsNullOrWhiteSpace(updated.Object))
+                turn.AssistantText = $"Entendí que quieres {updated.Object}. " +
+                    (updated.SuggestedFields.Count > 0 ? "Preparé una primera versión con detalles sugeridos, que puedes cambiar. " : "Actualicé los detalles de tu idea. ") +
+                    "Revisa la vista preliminar y dime qué cambiarías; por ejemplo: más pequeño, otro color o añadir un nombre. La fabricación y el precio se revisan aparte.";
             turn.Status = "Completed"; turn.Model = result.Model; turn.ReportedCostUsd = result.CostUsd;
             if (result.CostUsd > turn.ReservedUsd) c.ReservedUsd = Math.Max(c.ReservedUsd, Options.SessionBudgetUsd);
         }

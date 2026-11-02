@@ -43,6 +43,7 @@ public class ChatAllowance
 
 public class DesignBrief
 {
+    public List<string> SuggestedFields { get; set; } = [];
     public string? Object { get; set; }
     public string? Use { get; set; }
     public string? CategoryId { get; set; }

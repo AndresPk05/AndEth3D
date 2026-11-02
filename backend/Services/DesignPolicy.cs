@@ -27,7 +27,7 @@ public static class DesignPolicy
 
     public static DesignBrief Merge(DesignBrief before, DesignPatch patch)
     {
-        if (patch.ClearFields is null || patch.ClearFields.Any(f => !Fields.Contains(f)) ||
+        if (patch.SuggestedFields is null || patch.SuggestedFields.Any(f => !Fields.Contains(f)) || patch.ClearFields is null || patch.ClearFields.Any(f => !Fields.Contains(f)) ||
             patch.Colors?.Count > 16 || patch.Colors?.Any(c => string.IsNullOrWhiteSpace(c) || c.Length > 60) == true ||
             new[] { patch.Object, patch.Use, patch.Personalization, patch.Reference }.Any(s => s?.Length > 1000) ||
             patch.CategoryId?.Length > 60 || patch.MaterialId?.Length > 60 ||
@@ -36,12 +36,18 @@ public static class DesignPolicy
             throw new InvalidDataException("Invalid design output.");
         var result = Read(Write(before));
         if (patch.OffTopic) return result;
-        foreach (var property in typeof(DesignBrief).GetProperties())
+        foreach (var property in typeof(DesignBrief).GetProperties().Where(p => p.Name != nameof(DesignBrief.SuggestedFields)))
         {
             var field = JsonNamingPolicy.CamelCase.ConvertName(property.Name);
             var value = property.GetValue(patch);
-            if (patch.ClearFields.Contains(field)) property.SetValue(result, null);
-            else if (value is not null) property.SetValue(result, value is string s ? s.Trim() : value);
+            if (patch.ClearFields.Contains(field)) { property.SetValue(result, null); result.SuggestedFields.Remove(field); }
+            else if (value is not null) {
+                // Suggestions cannot silently replace information the customer already supplied.
+                if (patch.SuggestedFields.Contains(field) && property.GetValue(before) is not null && !before.SuggestedFields.Contains(field)) continue;
+                property.SetValue(result, value is string s ? s.Trim() : value);
+                result.SuggestedFields.Remove(field);
+                if (patch.SuggestedFields.Contains(field)) result.SuggestedFields.Add(field);
+            }
         }
         return result;
     }
