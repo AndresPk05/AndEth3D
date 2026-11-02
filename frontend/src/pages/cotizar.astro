@@ -75,7 +75,7 @@ import Layout from "../layouts/Layout.astro";
       error.classList.add("hidden");
 
       const fileInput = document.getElementById("reference") as HTMLInputElement;
-      if (fileInput.files?.[0] && fileInput.files[0].size > 20 * 1024 * 1024) {
+      if (fileInput.files?.[0] && fileInput.files[0].size > 20_000_000) {
         error.textContent = "El archivo supera los 20 MB permitidos.";
         error.classList.remove("hidden");
         return;

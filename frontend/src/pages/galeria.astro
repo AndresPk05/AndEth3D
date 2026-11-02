@@ -47,7 +47,7 @@ import Layout from "../layouts/Layout.astro";
   </div>
 
   <script>
-    import { apiFetch, fileUrl } from "../lib/api";
+    import { escapeHtml, apiFetch, fileUrl } from "../lib/api";
 
     interface GalleryItem {
       id: number;
@@ -67,7 +67,7 @@ import Layout from "../layouts/Layout.astro";
 
     function cardImage(item: GalleryItem) {
       return item.imageUrl
-        ? `<img src="${fileUrl(item.imageUrl)}" alt="${item.title}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />`
+        ? `<img src="${fileUrl(item.imageUrl)}" alt="${escapeHtml(item.title)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />`
         : `<div class="w-full h-full bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-400">
              <svg class="w-14 h-14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
@@ -84,9 +84,9 @@ import Layout from "../layouts/Layout.astro";
           <button data-id="${item.id}" class="gallery-card group text-left bg-white rounded-2xl overflow-hidden border border-brand-100 hover:shadow-xl hover:shadow-brand-100 hover:border-brand-300 transition">
             <div class="aspect-[4/3] overflow-hidden bg-brand-50">${cardImage(item)}</div>
             <div class="p-5">
-              <span class="text-xs font-semibold text-brand-600 uppercase tracking-wide">${item.category}</span>
-              <h3 class="font-display font-bold mt-1">${item.title}</h3>
-              <p class="text-sm text-ink-soft mt-1 line-clamp-2">${item.description}</p>
+              <span class="text-xs font-semibold text-brand-600 uppercase tracking-wide">${escapeHtml(item.category)}</span>
+              <h3 class="font-display font-bold mt-1">${escapeHtml(item.title)}</h3>
+              <p class="text-sm text-ink-soft mt-1 line-clamp-2">${escapeHtml(item.description)}</p>
             </div>
           </button>`
             )
@@ -103,11 +103,11 @@ import Layout from "../layouts/Layout.astro";
       filters.innerHTML = categories
         .map(
           (cat) => `
-        <button data-cat="${cat}" class="filter-btn px-4 py-2 rounded-full text-sm font-semibold border transition ${
+        <button data-cat="${escapeHtml(cat)}" class="filter-btn px-4 py-2 rounded-full text-sm font-semibold border transition ${
             cat === activeCategory
               ? "bg-brand-600 text-white border-brand-600"
               : "bg-white text-brand-700 border-brand-200 hover:bg-brand-50"
-          }">${cat}</button>`
+          }">${escapeHtml(cat)}</button>`
         )
         .join("");
       filters.querySelectorAll(".filter-btn").forEach((btn) =>

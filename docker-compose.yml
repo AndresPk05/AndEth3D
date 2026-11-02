@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: andeth3d
-      POSTGRES_PASSWORD: andeth3d_dev_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your environment}
       POSTGRES_DB: andeth3d
     ports:
       - "5432:5432"

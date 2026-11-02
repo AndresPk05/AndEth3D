@@ -16,6 +16,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(u => u.Email)
             .IsUnique();
 
+        modelBuilder.Entity<Order>().HasIndex(o => o.QuoteRequestId).IsUnique();
+        modelBuilder.Entity<QuoteRequest>().Property(q => q.Status).IsConcurrencyToken();
+        modelBuilder.Entity<Order>().Property(o => o.Status).IsConcurrencyToken();
         modelBuilder.Entity<Order>()
             .Property(o => o.Price)
             .HasPrecision(12, 2);

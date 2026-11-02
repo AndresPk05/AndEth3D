@@ -13,7 +13,7 @@ import AdminTabs from "../../components/AdminTabs.astro";
   </section>
 
   <script>
-    import { apiFetch, requireAuth } from "../../lib/api";
+    import { escapeHtml, apiFetch, requireAuth } from "../../lib/api";
 
     requireAuth("Admin");
 
@@ -30,7 +30,11 @@ import AdminTabs from "../../components/AdminTabs.astro";
       updatedAt: string;
     }
 
-    const STATUSES = ["Pending", "InQueue", "Printing", "Finished", "Delivered", "Cancelled"];
+    const NEXT: Record<string, string[]> = {
+      Pending: ["Pending", "InQueue", "Cancelled"], InQueue: ["InQueue", "Printing", "Cancelled"],
+      Printing: ["Printing", "Finished", "Cancelled"], Finished: ["Finished", "Delivered", "Cancelled"],
+      Delivered: ["Delivered"], Cancelled: ["Cancelled"]
+    };
     const LABELS: Record<string, string> = {
       Pending: "Recibido",
       InQueue: "En cola",
@@ -62,19 +66,19 @@ import AdminTabs from "../../components/AdminTabs.astro";
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <h3 class="font-display font-bold">#${o.id} — ${o.title}</h3>
+                  <h3 class="font-display font-bold">#${o.id} — ${escapeHtml(o.title)}</h3>
                   <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${COLORS[o.status]}">${LABELS[o.status]}</span>
                 </div>
-                <p class="text-sm text-ink-soft mt-1">${o.description}</p>
-                <p class="text-xs text-ink-soft mt-1">Cliente: <span class="font-semibold">${o.userName}</span> (${o.userEmail}) · Creado ${formatDate(o.createdAt)}</p>
+                <p class="text-sm text-ink-soft mt-1">${escapeHtml(o.description)}</p>
+                <p class="text-xs text-ink-soft mt-1">Cliente: <span class="font-semibold">${escapeHtml(o.userName)}</span> (${escapeHtml(o.userEmail)}) · Creado ${formatDate(o.createdAt)}</p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <select class="status-select px-3 py-2 rounded-lg border border-brand-200 text-sm bg-white">
-                  ${STATUSES.map((s) => `<option value="${s}" ${s === o.status ? "selected" : ""}>${LABELS[s]}</option>`).join("")}
+                  ${(NEXT[o.status] ?? []).map((s) => `<option value="${s}" ${s === o.status ? "selected" : ""}>${LABELS[s]}</option>`).join("")}
                 </select>
                 <input type="number" min="0" step="0.01" placeholder="Precio" value="${o.price ?? ""}"
                   class="price-input w-28 px-3 py-2 rounded-lg border border-brand-200 text-sm" />
-                <input type="text" placeholder="Nota para el cliente" value="${o.notes ?? ""}"
+                <input type="text" placeholder="Nota para el cliente" value="${escapeHtml(o.notes ?? "")}"
                   class="notes-input w-52 px-3 py-2 rounded-lg border border-brand-200 text-sm" />
                 <button class="save-btn px-4 py-2 rounded-full bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition">Guardar</button>
               </div>
@@ -112,7 +116,7 @@ import AdminTabs from "../../components/AdminTabs.astro";
       orders = await apiFetch<Order[]>("/api/admin/orders");
       render();
     } catch (err) {
-      container.innerHTML = `<p class="text-red-600">${(err as Error).message}</p>`;
+      container.innerHTML = `<p class="text-red-600">${escapeHtml((err as Error).message)}</p>`;
     }
   </script>
 </Layout>

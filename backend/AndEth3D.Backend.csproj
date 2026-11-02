@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <UserSecretsId>AndEth3D.Backend</UserSecretsId>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>AndEth3D.Backend</RootNamespace>
     <AssemblyName>AndEth3D.Backend</AssemblyName>

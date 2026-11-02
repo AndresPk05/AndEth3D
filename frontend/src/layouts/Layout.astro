@@ -127,7 +127,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? "http://localhost:43
     </footer>
 
     <script>
-      import { getSession, clearSession } from "../lib/api";
+      import { apiFetch, getSession, clearSession } from "../lib/api";
 
       const session = getSession();
       document.querySelectorAll<HTMLElement>("[data-auth-only]").forEach((el) => {
@@ -161,7 +161,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? "http://localhost:43
           if (!btn.contains(e.target as Node) && !menu.contains(e.target as Node))
             menu.classList.add("hidden");
         });
-        document.getElementById("logout-btn")?.addEventListener("click", () => {
+        document.getElementById("logout-btn")?.addEventListener("click", async () => {
+          try { await apiFetch("/api/auth/logout", { method: "POST" }); }
+          catch { alert("No se pudo cerrar la sesion en el servidor. Intenta nuevamente."); return; }
           clearSession();
           window.location.href = "/";
         });

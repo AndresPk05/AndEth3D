@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
+using Npgsql;
 using AndEth3D.Backend.Data;
 using AndEth3D.Backend.Models;
 using AndEth3D.Backend.Services;
@@ -26,10 +28,10 @@ public class QuotesController(AppDbContext db, FileStorage storage) : Controller
 
     [Authorize]
     [HttpPost]
-    [RequestSizeLimit(20_000_000)]
+    [RequestSizeLimit(21_000_000)]
     public async Task<ActionResult<QuoteDto>> Create(
-        [FromForm] string description,
-        [FromForm] string material,
+        [FromForm, Required, StringLength(5000)] string description,
+        [FromForm, Required, StringLength(100)] string material,
         [FromForm] IFormFile? referenceFile)
     {
         var quote = new QuoteRequest
@@ -40,7 +42,7 @@ public class QuotesController(AppDbContext db, FileStorage storage) : Controller
         };
 
         if (referenceFile is not null)
-            quote.ReferenceFileUrl = await storage.SaveAsync(referenceFile);
+            quote.ReferenceFileUrl = await storage.SaveAsync(referenceFile, privateFile: true);
 
         db.QuoteRequests.Add(quote);
         await db.SaveChangesAsync();
@@ -72,7 +74,7 @@ public class QuotesController(AppDbContext db, FileStorage storage) : Controller
         return Ok(quotes.Select(ToDto));
     }
 
-    public record UpdateQuoteRequest(string Status, string? AdminNotes);
+    public record UpdateQuoteRequest([property: Required] string Status, [property: StringLength(5000)] string? AdminNotes);
 
     [Authorize(Roles = Roles.Admin)]
     [HttpPut("{id:int}")]
@@ -84,13 +86,16 @@ public class QuotesController(AppDbContext db, FileStorage storage) : Controller
         var quote = await db.QuoteRequests.Include(q => q.User).FirstOrDefaultAsync(q => q.Id == id);
         if (quote is null) return NotFound();
 
+        if (quote.Status == QuoteStatus.Converted || request.Status == QuoteStatus.Converted ||
+            await db.Orders.AnyAsync(o => o.QuoteRequestId == id))
+            return Conflict(new { message = "Una cotizacion convertida no puede cambiar de estado. Use convertir para crear un pedido." });
         quote.Status = request.Status;
         quote.AdminNotes = request.AdminNotes;
         await db.SaveChangesAsync();
         return Ok(ToDto(quote));
     }
 
-    public record ConvertQuoteRequest(string Title, decimal? Price, string? Notes);
+    public record ConvertQuoteRequest([property: StringLength(200)] string? Title, [property: Range(typeof(decimal), "0", "9999999999.99")] decimal? Price, [property: StringLength(5000)] string? Notes);
 
     [Authorize(Roles = Roles.Admin)]
     [HttpPost("{id:int}/convert")]
@@ -98,9 +103,11 @@ public class QuotesController(AppDbContext db, FileStorage storage) : Controller
     {
         var quote = await db.QuoteRequests.Include(q => q.User).FirstOrDefaultAsync(q => q.Id == id);
         if (quote is null) return NotFound();
-        if (quote.Status == QuoteStatus.Converted)
+        if (quote.Status == QuoteStatus.Converted || await db.Orders.AnyAsync(o => o.QuoteRequestId == id))
             return Conflict(new { message = "Esta cotización ya fue convertida en pedido." });
 
+        if (quote.Status == QuoteStatus.Rejected)
+            return Conflict(new { message = "Debe reabrir la cotizacion rechazada antes de convertirla." });
         var order = new Order
         {
             UserId = quote.UserId,
@@ -113,9 +120,21 @@ public class QuotesController(AppDbContext db, FileStorage storage) : Controller
         };
 
         quote.Status = QuoteStatus.Converted;
+        quote.AdminNotes = request.Notes ?? quote.AdminNotes;
         db.Orders.Add(order);
-        await db.SaveChangesAsync();
-
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505", ConstraintName: "IX_Orders_QuoteRequestId" })
+        { return Conflict(new { message = "Esta cotizacion ya tiene un pedido." }); }
         return Ok(new { orderId = order.Id });
+    }
+    [Authorize]
+    [HttpGet("{id:int}/file")]
+    public async Task<IActionResult> Download(int id)
+    {
+        var quote = await db.QuoteRequests.FindAsync(id);
+        if (quote is null || (quote.UserId != CurrentUserId && !User.IsInRole(Roles.Admin))) return NotFound();
+        var path = storage.ResolvePrivate(quote.ReferenceFileUrl);
+        if (path is null || !System.IO.File.Exists(path)) return NotFound();
+        return PhysicalFile(path, "application/octet-stream", Path.GetFileName(path));
     }
 }

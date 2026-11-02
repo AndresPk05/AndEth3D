@@ -38,7 +38,7 @@ import Layout from "../layouts/Layout.astro";
   </section>
 
   <script>
-    import { apiFetch, saveSession, getSession, type Session } from "../lib/api";
+    import { safeNext, apiFetch, saveSession, getSession, type Session } from "../lib/api";
 
     if (getSession()) window.location.href = "/";
 
@@ -61,7 +61,7 @@ import Layout from "../layouts/Layout.astro";
         });
         saveSession(session);
         const next = new URLSearchParams(window.location.search).get("next");
-        window.location.href = next ?? (session.user.role === "Admin" ? "/admin/pedidos" : "/cotizar");
+        window.location.href = safeNext(next, session.user.role === "Admin" ? "/admin/pedidos" : "/cotizar");
       } catch (err) {
         error.textContent = (err as Error).message;
         error.classList.remove("hidden");

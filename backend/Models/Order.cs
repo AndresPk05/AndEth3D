@@ -24,5 +24,14 @@ public static class OrderStatus
     public const string Delivered = "Delivered";
     public const string Cancelled = "Cancelled";
 
+    public static bool CanTransition(string from, string to) => from == to || (from, to) switch
+    {
+        (Pending, InQueue or Cancelled) => true,
+        (InQueue, Printing or Cancelled) => true,
+        (Printing, Finished or Cancelled) => true,
+        (Finished, Delivered or Cancelled) => true,
+        _ => false
+    };
+
     public static readonly string[] All = [Pending, InQueue, Printing, Finished, Delivered, Cancelled];
 }

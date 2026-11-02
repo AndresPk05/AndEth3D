@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
 using AndEth3D.Backend.Data;
 using AndEth3D.Backend.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -46,7 +47,7 @@ public class OrdersController(AppDbContext db) : ControllerBase
         return Ok(orders.Select(ToDto));
     }
 
-    public record UpdateOrderStatusRequest(string Status, string? Notes, decimal? Price);
+    public record UpdateOrderStatusRequest([property: Required] string Status, [property: StringLength(5000)] string? Notes, [property: Range(typeof(decimal), "0", "9999999999.99")] decimal? Price);
 
     [Authorize(Roles = Roles.Admin)]
     [HttpPut("admin/orders/{id:int}/status")]
@@ -58,6 +59,8 @@ public class OrdersController(AppDbContext db) : ControllerBase
         var order = await db.Orders.Include(o => o.User).FirstOrDefaultAsync(o => o.Id == id);
         if (order is null) return NotFound();
 
+        if (!OrderStatus.CanTransition(order.Status, request.Status))
+            return Conflict(new { message = "Transicion de estado no permitida." });
         order.Status = request.Status;
         order.Notes = request.Notes;
         order.Price = request.Price ?? order.Price;

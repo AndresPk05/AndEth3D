@@ -5,3 +5,5 @@ obj/
 *.user
 .env
 backend/wwwroot/uploads/
+backend/App_Data/
+frontend/.astro/

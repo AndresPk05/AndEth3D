@@ -26,9 +26,9 @@ import Layout from "../layouts/Layout.astro";
         </div>
         <div>
           <label for="password" class="block text-sm font-semibold mb-1">Contraseña</label>
-          <input id="password" type="password" required minlength="6" autocomplete="new-password"
+          <input id="password" type="password" required minlength="12" autocomplete="new-password"
             class="w-full px-4 py-2.5 rounded-xl border border-brand-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition" />
-          <p class="text-xs text-ink-soft mt-1">Mínimo 6 caracteres.</p>
+          <p class="text-xs text-ink-soft mt-1">Mínimo 12 caracteres.</p>
         </div>
         <p id="error" class="hidden text-sm text-red-600 font-medium"></p>
         <button type="submit" id="submit-btn"

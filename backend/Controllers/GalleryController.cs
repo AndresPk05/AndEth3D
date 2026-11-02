@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using AndEth3D.Backend.Data;
 using AndEth3D.Backend.Models;
 using AndEth3D.Backend.Services;
@@ -20,12 +21,12 @@ public class GalleryController(AppDbContext db, FileStorage storage) : Controlle
 
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
-    [RequestSizeLimit(20_000_000)]
+    [RequestSizeLimit(21_000_000)]
     public async Task<ActionResult<GalleryItem>> Create(
-        [FromForm] string title,
-        [FromForm] string description,
-        [FromForm] string category,
-        [FromForm] string material,
+        [FromForm, Required, StringLength(200)] string title,
+        [FromForm, Required, StringLength(5000)] string description,
+        [FromForm, Required, StringLength(100)] string category,
+        [FromForm, Required, StringLength(100)] string material,
         [FromForm] IFormFile image)
     {
         var item = new GalleryItem
@@ -44,13 +45,13 @@ public class GalleryController(AppDbContext db, FileStorage storage) : Controlle
 
     [Authorize(Roles = Roles.Admin)]
     [HttpPut("{id:int}")]
-    [RequestSizeLimit(20_000_000)]
+    [RequestSizeLimit(21_000_000)]
     public async Task<ActionResult<GalleryItem>> Update(
         int id,
-        [FromForm] string title,
-        [FromForm] string description,
-        [FromForm] string category,
-        [FromForm] string material,
+        [FromForm, Required, StringLength(200)] string title,
+        [FromForm, Required, StringLength(5000)] string description,
+        [FromForm, Required, StringLength(100)] string category,
+        [FromForm, Required, StringLength(100)] string material,
         [FromForm] IFormFile? image)
     {
         var item = await db.GalleryItems.FindAsync(id);

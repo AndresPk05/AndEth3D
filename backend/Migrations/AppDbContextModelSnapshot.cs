@@ -84,6 +84,7 @@ namespace AndEth3D.Backend.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -100,6 +101,8 @@ namespace AndEth3D.Backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("QuoteRequestId").IsUnique();
 
                     b.ToTable("Orders");
                 });
@@ -130,6 +133,7 @@ namespace AndEth3D.Backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -153,6 +157,8 @@ namespace AndEth3D.Backend.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("SessionVersion").HasColumnType("integer");
 
                     b.Property<string>("Email")
                         .IsRequired()
