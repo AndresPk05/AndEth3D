@@ -93,7 +93,8 @@ public class EstimationService(AppDbContext db, ICurrentActor actor, ProposalIma
         var q=await db.QuoteRequests.AsNoTracking().SingleOrDefaultAsync(q=>q.Id==id && (q.UserId==actor.Id || actor.IsAdmin));
         if(q is null) return AppResult.NotFound();
         return AppResult.Ok(new{snapshot=q.DesignSnapshotJson is null ? (JsonElement?)null : JsonSerializer.Deserialize<JsonElement>(q.DesignSnapshotJson),
-            q.ConfirmedPriceCop,q.ReviewVersion,q.AdminNotes,q.Status,imageUrl=q.ProposalId is null ? null : $"/api/estimation/quotes/{id}/image"});
+            q.ConfirmedPriceCop,q.ReviewVersion,q.AdminNotes,q.Status,imageUrl=q.ProposalId is null ? null : $"/api/estimation/quotes/{id}/image",
+            modelUrl=q.ParametricJobId is null?null:$"/api/parametric/models/{q.ParametricJobId}"});
     }
     public async Task<AppResult> Image(int id)
     {

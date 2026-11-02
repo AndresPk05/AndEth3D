@@ -39,6 +39,11 @@ builder.Services.AddSingleton<IPasswordHasher, TestPasswordHasher>();
 builder.Services.AddSingleton<ITokenIssuer, TestTokenIssuer>();
 builder.Services.AddSingleton<ProposalImageStore>();
 builder.Services.AddScoped<VisualProposalProcessor>();
+builder.Services.AddScoped<ParametricProcessor>();
+var parametricOptions = new ParametricOptions();
+var parametricSlicer = new FakeParametricSlicer();
+builder.Services.AddSingleton<IOptions<ParametricOptions>>(Options.Create(parametricOptions));
+builder.Services.AddSingleton<IParametricSlicer>(parametricSlicer);
 var imageGenerator = new FakeImageGenerator();
 builder.Services.AddSingleton<IImageGenerator>(imageGenerator);
 var chatOptions = new ChatOptions { Enabled = true, ApiKey = "test-only-not-a-real-key", Models = ["test/model"], MinimumIntervalSeconds = 0 };
@@ -114,6 +119,7 @@ await ChatChecks.Run(client, app.Services, designAgent, chatOptions);
 await GatewayChecks.Run(client, app.Services);
 await VisualChecks.Run(client, app.Services, imageGenerator);
 await EstimationChecks.Run(client, app.Services);
+await ParametricChecks.Run(client, app.Services, parametricOptions, parametricSlicer);
 
 class TestAuth(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)

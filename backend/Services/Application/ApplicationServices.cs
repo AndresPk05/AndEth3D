@@ -6,6 +6,7 @@ public static class ApplicationServices
     {
         services.AddScoped<AuthService>();
         services.AddScoped<EstimationService>();
+        services.AddScoped<ParametricService>();
         services.AddScoped<ChatService>();
         services.AddScoped<GalleryService>();
         services.AddScoped<ManufacturingService>();

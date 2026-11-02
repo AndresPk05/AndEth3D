@@ -8,6 +8,11 @@ public static class AppResultHttp
     public static IActionResult ToHttp(this AppResult result, ControllerBase controller, string? createdBase = null, string? acceptedLocation = null)
     {
         if (result.Outcome == AppOutcome.File) {
+            if (result.Body is DownloadBytes bytes) {
+                controller.Response.Headers.CacheControl = "private, no-store";
+                controller.Response.Headers["X-Content-Type-Options"] = "nosniff";
+                return controller.File(bytes.Bytes,bytes.ContentType,bytes.Name);
+            }
             var file = (DownloadFile)result.Body!;
             if (file.Private) controller.Response.Headers.CacheControl = "private, no-store";
             controller.Response.Headers["X-Content-Type-Options"] = "nosniff";

@@ -39,6 +39,11 @@ builder.Services.AddScoped<VisualProposalProcessor>();
 builder.Services.AddHttpClient<IImageGenerator, OpenRouterImageClient>(http => http.Timeout = Timeout.InfiniteTimeSpan)
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddHostedService<VisualProposalWorker>();
+builder.Services.AddOptions<ParametricOptions>().Bind(builder.Configuration.GetSection("Parametric"))
+    .Validate(o=>o.Valid(),"Configure bounded parametric limits and pinned, verified slicing profiles.").ValidateOnStart();
+builder.Services.AddSingleton<IParametricSlicer,DockerParametricSlicer>();
+builder.Services.AddScoped<ParametricProcessor>();
+builder.Services.AddHostedService<ParametricWorker>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

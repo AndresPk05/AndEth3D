@@ -4,6 +4,10 @@ import Layout from "../layouts/Layout.astro";
 <Layout title="Detalle de cotización de diseño">
   <section class="max-w-5xl mx-auto px-4 py-10">
     <h1 class="text-3xl font-bold mb-4">Tu solicitud de diseño</h1>
+    <canvas id="quote-model-preview" width="640" height="440" hidden class="max-w-full bg-slate-50 rounded-xl" aria-label="Modelo 3D enviado"></canvas>
+    <label id="quote-model-controls" hidden>Girar modelo<input id="quote-model-rotation" type="range" min="0" max="360" value="35" /></label>
+    <p id="quote-model-caption" class="text-sm"></p>
+    <a id="quote-model-download" hidden class="text-brand-700 underline">Descargar STL enviado</a>
     <p id="design-quote-status" role="status" aria-live="polite">Cargando.</p>
     <div class="grid md:grid-cols-2 gap-6 my-5">
       <div><img id="design-quote-image" alt="Propuesta conceptual enviada para cotización" class="hidden w-full rounded-xl" /><p class="text-sm mt-3">Imagen conceptual; requiere validación técnica.</p></div>

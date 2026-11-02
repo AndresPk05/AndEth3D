@@ -37,6 +37,9 @@ public class OrdersService(AppDbContext db, ICurrentActor actor)
 
         var order = await db.Orders.Include(o => o.User).FirstOrDefaultAsync(o => o.Id == id);
         if (order is null) return AppResult.NotFound();
+        if(request.Price is not null && request.Price!=order.Price && order.QuoteRequestId is not null &&
+            await db.QuoteRequests.AnyAsync(q=>q.Id==order.QuoteRequestId&&q.DesignSnapshotJson!=null))
+            return AppResult.Conflict(new{message="Este pedido conserva el precio confirmado en su cotización."});
 
         if (!OrderStatus.CanTransition(order.Status, request.Status))
             return AppResult.Conflict(new { message = "Transicion de estado no permitida." });

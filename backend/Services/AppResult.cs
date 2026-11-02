@@ -2,6 +2,7 @@ namespace AndEth3D.Backend.Services;
 
 public enum AppOutcome { Success, Created, Accepted, NoContent, Invalid, NotFound, Unauthorized, Forbidden, Conflict, RateLimited, Unavailable, File }
 public record DownloadFile(string Path, string ContentType, string? Name = null, bool Private = true);
+public record DownloadBytes(byte[] Bytes, string ContentType, string Name);
 public record AppResult(AppOutcome Outcome, object? Body = null, string? ResourceId = null)
 {
     public static AppResult Ok(object? body = null) => new(AppOutcome.Success, body);
@@ -15,6 +16,7 @@ public record AppResult(AppOutcome Outcome, object? Body = null, string? Resourc
     public static AppResult RateLimited(object body) => new(AppOutcome.RateLimited, body);
     public static AppResult Unavailable(object body) => new(AppOutcome.Unavailable, body);
     public static AppResult File(DownloadFile file) => new(AppOutcome.File, file);
+    public static AppResult File(DownloadBytes file) => new(AppOutcome.File, file);
 }
 
 public interface ICurrentActor

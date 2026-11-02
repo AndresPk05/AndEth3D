@@ -10,6 +10,7 @@ public class QuoteRequest
     public int? ManufacturingRevisionId { get; set; }
     public Guid? DesignRequestId { get; set; }
     public Guid? ProposalId { get; set; }
+    public Guid? ParametricJobId { get; set; }
     public string? DesignSnapshotJson { get; set; }
     public string? DesignEstimateToken { get; set; }
     public decimal? ConfirmedPriceCop { get; set; }

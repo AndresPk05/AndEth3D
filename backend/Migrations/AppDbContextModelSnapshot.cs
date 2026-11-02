@@ -295,6 +295,130 @@ namespace AndEth3D.Backend.Migrations
                     b.ToTable("Orders");
                 });
 
+            modelBuilder.Entity("AndEth3D.Backend.Models.ParametricAllowance", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Day")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("ParametricAllowances");
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.ParametricJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("ActualGrams")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)");
+
+                    b.Property<decimal?>("ActualSeconds")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)");
+
+                    b.Property<string>("BriefJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EstimateJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Failure")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("Grams")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)");
+
+                    b.Property<DateTime?>("LeaseUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ManufacturingRevisionId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("MeasuredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("MeasuredBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MeasurementNotes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ModelHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("ModelStl")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("ParametersJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProfileIni")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProfileJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReproductionHash")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("Seconds")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TemplateVersion")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("ManufacturingRevisionId");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("ParametricJobs");
+                });
+
             modelBuilder.Entity("AndEth3D.Backend.Models.QuoteRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -333,6 +457,9 @@ namespace AndEth3D.Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("ParametricJobId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("ProposalId")
                         .HasColumnType("uuid");
 
@@ -357,6 +484,8 @@ namespace AndEth3D.Backend.Migrations
                         .IsUnique();
 
                     b.HasIndex("ManufacturingRevisionId");
+
+                    b.HasIndex("ParametricJobId");
 
                     b.HasIndex("ProposalId");
 
@@ -614,11 +743,40 @@ namespace AndEth3D.Backend.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("AndEth3D.Backend.Models.ParametricAllowance", b =>
+                {
+                    b.HasOne("AndEth3D.Backend.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.ParametricJob", b =>
+                {
+                    b.HasOne("AndEth3D.Backend.Models.ChatConversation", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null)
+                        .WithMany()
+                        .HasForeignKey("ManufacturingRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AndEth3D.Backend.Models.QuoteRequest", b =>
                 {
                     b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null)
                         .WithMany()
                         .HasForeignKey("ManufacturingRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AndEth3D.Backend.Models.ParametricJob", null)
+                        .WithMany()
+                        .HasForeignKey("ParametricJobId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("AndEth3D.Backend.Models.VisualProposal", null)

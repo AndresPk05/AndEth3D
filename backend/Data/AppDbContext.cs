@@ -5,6 +5,8 @@ namespace AndEth3D.Backend.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<ParametricJob> ParametricJobs => Set<ParametricJob>();
+    public DbSet<ParametricAllowance> ParametricAllowances => Set<ParametricAllowance>();
     public DbSet<CalibrationRevision> CalibrationRevisions => Set<CalibrationRevision>();
     public DbSet<VisualSettingsRevision> VisualSettingsRevisions => Set<VisualSettingsRevision>();
     public DbSet<VisualProposal> VisualProposals => Set<VisualProposal>();
@@ -21,6 +23,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ParametricJob>().Property(j=>j.Version).IsConcurrencyToken();
+        modelBuilder.Entity<ParametricJob>().HasIndex(j=>new{j.Status,j.CreatedAt});
+        modelBuilder.Entity<ParametricJob>().HasOne<ChatConversation>().WithMany().HasForeignKey(j=>j.ConversationId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ParametricJob>().HasOne<ManufacturingRevision>().WithMany().HasForeignKey(j=>j.ManufacturingRevisionId).OnDelete(DeleteBehavior.Restrict);
+        foreach(var name in new[]{"Grams","Seconds","ActualGrams","ActualSeconds"})modelBuilder.Entity<ParametricJob>().Property<decimal?>(name).HasPrecision(14,4);
+        modelBuilder.Entity<ParametricAllowance>().HasKey(a=>a.UserId);
+        modelBuilder.Entity<ParametricAllowance>().Property(a=>a.Version).IsConcurrencyToken();
+        modelBuilder.Entity<ParametricAllowance>().HasOne<User>().WithMany().HasForeignKey(a=>a.UserId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<QuoteRequest>().HasOne<ParametricJob>().WithMany().HasForeignKey(q=>q.ParametricJobId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CalibrationRevision>().HasIndex(r => r.Version).IsUnique();
         modelBuilder.Entity<CalibrationRevision>().HasOne<ManufacturingRevision>().WithMany().HasForeignKey(r => r.ManufacturingRevisionId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<QuoteRequest>().HasIndex(q => q.DesignRequestId).IsUnique();

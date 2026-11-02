@@ -1,0 +1,16 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import AdminTabs from "../../components/AdminTabs.astro";
+---
+<Layout title="Admin - Modelos y laminado">
+  <section class="max-w-6xl mx-auto px-4 py-10">
+    <AdminTabs />
+    <h1 class="text-3xl font-bold mb-4">Laminado y comparación con producción</h1>
+    <p class="mb-4">Los perfiles aprobados se configuran en el servidor. Registra consumo total y tiempo reales de una pieza, incluyendo soportes y purga, para comparar con el laminado. Cada medición es inmutable; documenta las condiciones en las notas. El sistema mantiene revisión administrativa antes de confirmar precios.</p>
+    <p id="slicing-status" role="status" aria-live="polite">Cargando.</p>
+    <button id="slicing-refresh" type="button" class="border rounded-full px-4 py-2 my-3">Actualizar</button>
+    <pre id="slicing-profiles" class="text-xs whitespace-pre-wrap break-all my-4"></pre>
+    <div id="slicing-jobs" class="space-y-4"></div>
+  </section>
+  <script>import "../../lib/slicing-admin";</script>
+</Layout>
