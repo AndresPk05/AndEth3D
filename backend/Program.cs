@@ -30,6 +30,8 @@ builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentActor, HttpCurrentActor>();
 builder.Services.AddApplicationServices();
+builder.Services.AddOptions<GuestDesignOptions>().Bind(builder.Configuration.GetSection("GuestDesign"))
+    .Validate(o => o.MaxSessionsPerDay is >= 1 and <= 100, "GuestDesign daily limit must be 1..100.").ValidateOnStart();
 builder.Services.AddSingleton<FileStorage>();
 builder.Services.AddOptions<ChatOptions>().Bind(builder.Configuration.GetSection("OpenRouter"))
     .Validate(o => o.Valid(), "Configure OpenRouter credentials, models and positive usage limits.").ValidateOnStart();
@@ -129,6 +131,7 @@ if (!app.Environment.IsDevelopment()) { app.UseHsts(); app.UseHttpsRedirection()
 app.UseCors("frontend");
 app.UseStaticFiles();
 app.UseAuthentication();
+app.UseGuestDesignAccess();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();

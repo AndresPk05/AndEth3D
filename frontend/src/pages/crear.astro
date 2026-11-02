@@ -1,12 +1,14 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import DesignEstimate from "../components/DesignEstimate.astro";
+import QuoteForm from "../components/QuoteForm.astro";
 import ParametricDesign from "../components/ParametricDesign.astro";
 ---
 <Layout title="Diseña tu idea" description="Cuéntanos qué quieres crear y define tu idea de impresión 3D con nuestro asistente.">
   <section class="max-w-6xl mx-auto px-4 py-10">
+    <p class="text-sm text-ink-soft mb-4">Puedes diseñar sin registrarte. La visita es temporal y tiene límites de uso. Para cotizar te pediremos tus datos de contacto.</p>
     <h1 class="font-display text-3xl sm:text-4xl font-extrabold mb-3">Vamos a darle forma a tu idea</h1>
-    <p class="text-ink-soft mb-6">Cuéntanos qué necesitas. Te ayudaremos a definir medidas, material y detalles, paso a paso. Tu conversación se guarda para que puedas continuar después.</p>
+    <p class="text-ink-soft mb-6">Cuéntanos qué necesitas. Te ayudaremos a definir medidas, material y detalles, paso a paso. La visita sin cuenta dura 30 minutos; conserva tu ficha antes de salir.</p>
     <p class="text-sm text-ink-soft mb-6">Completa la ficha, genera una propuesta visual y consulta un precio orientativo cuando tengamos referencias comparables. Las imágenes y estimaciones requieren revisión técnica. Usamos servicios de inteligencia artificial para procesar tus solicitudes.</p>
     <div class="flex flex-wrap gap-3 mb-6 items-end">
       <label class="flex-1 min-w-48 text-sm font-semibold">Mis ideas
@@ -35,7 +37,7 @@ import ParametricDesign from "../components/ParametricDesign.astro";
         <dl id="design-brief" class="space-y-3 text-sm"></dl>
         <ul id="design-issues" class="list-disc pl-5 text-sm text-amber-800 mt-4 space-y-2"></ul>
         <p class="text-xs text-ink-soft mt-5">La compatibilidad de medidas es preliminar. Confirmaremos orientación, resistencia y viabilidad al revisar el diseño.</p>
-        <a href="/cotizar" class="inline-block mt-4 text-brand-700 underline">Solicitar asesoría mediante cotización</a>
+        <a href="#solicitar" class="inline-block mt-4 text-brand-700 underline">Describir mi pieza y solicitar cotización</a>
       </aside>
     </div>
     <section class="mt-8 bg-white rounded-2xl border border-brand-100 p-5 sm:p-7" aria-label="Propuestas visuales">
@@ -69,6 +71,7 @@ import ParametricDesign from "../components/ParametricDesign.astro";
   </section>
   <DesignEstimate />
   <ParametricDesign />
+  <QuoteForm />
   <script>
     import "../lib/design-estimate";
     import "../lib/parametric-design";

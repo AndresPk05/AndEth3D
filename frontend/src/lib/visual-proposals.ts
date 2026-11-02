@@ -1,4 +1,4 @@
-import { apiFetch, API_URL, getSession, clearSession } from "./api";
+import { apiFetch, API_URL, getDesignSession, clearSession } from "./api";
 
 type Proposal = {id: string; number: number; status: string; outdated: boolean; imageUrl: string | null; message: string; brief: Record<string, unknown>; materialName: string};
 type VisualState = {enabled: boolean; supportsEditing: boolean; fingerprint: string; canGenerate: boolean; reason: string; proposals: Proposal[]};
@@ -19,7 +19,7 @@ let blobUrl: string | null = null;
 let imageRequest = 0;
 let refreshRequest = 0;
 let poll: ReturnType<typeof setTimeout> | undefined;
-function pendingKey() { return `andeth-visual-pending-${getSession()?.user.id}-${conversationId}`; }
+function pendingKey() { return `andeth-visual-pending-${getDesignSession()?.user.id}-${conversationId}`; }
 function controls() {
   generate.disabled = posting || chatBusy || !state?.canGenerate;
   parent.disabled = posting || chatBusy || !state?.supportsEditing;
@@ -44,8 +44,8 @@ async function show(proposal?: Proposal) {
   releaseImage(); const request = imageRequest; const active = conversationId;
   empty.classList.remove("hidden"); empty.textContent = "Cargando imagen privada…";
   try {
-    const response = await fetch(`${API_URL}${proposal.imageUrl}`, {cache: "no-store", headers: {Authorization: `Bearer ${getSession()?.token ?? ""}`}});
-    if (response.status === 401) { clearSession(); window.location.assign("/login?next=%2Fcrear"); throw new Error("Inicia sesión para ver la imagen."); }
+    const response = await fetch(`${API_URL}${proposal.imageUrl}`, {cache: "no-store", headers: {Authorization: `Bearer ${getDesignSession()?.token ?? ""}`}});
+    if (response.status === 401) { clearSession(); window.location.assign("/crear"); throw new Error("Inicia sesión para ver la imagen."); }
     if (!response.ok || response.headers.get("Content-Type")?.split(";")[0] !== "image/png") throw new Error("No pudimos cargar la imagen. Pulsa Actualizar propuestas para reintentar.");
     const blob = await response.blob();
     if (request !== imageRequest || active !== conversationId) return;

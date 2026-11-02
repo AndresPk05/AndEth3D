@@ -1,4 +1,4 @@
-import {API_URL,getSession} from "./api";
+import {API_URL,getDesignSession} from "./api";
 import {parseStl,type Triangle} from "./stl-geometry";
 export function modelPreview(canvas:HTMLCanvasElement,slider:HTMLInputElement,download:HTMLAnchorElement,caption:HTMLElement){
   let sequence=0,blobUrl:string|null=null,triangles:Triangle[]=[],scale=1;
@@ -20,7 +20,7 @@ export function modelPreview(canvas:HTMLCanvasElement,slider:HTMLInputElement,do
   async function load(url:string){
     clear();const request=sequence;
     if(!/^\/api\/parametric\/models\/[0-9a-f-]{36}$/i.test(url))throw new Error("Ruta de modelo inválida.");
-    const response=await fetch(API_URL+url,{headers:{Authorization:`Bearer ${getSession()?.token}`},cache:"no-store"});
+    const response=await fetch(API_URL+url,{headers:{Authorization:`Bearer ${getDesignSession()?.token}`},cache:"no-store"});
     if(!response.ok)throw new Error("No se pudo cargar el modelo privado.");
     const buffer=await response.arrayBuffer();if(request!==sequence)return false;
     const mesh=parseStl(buffer);triangles=mesh.triangles;scale=330/(Math.max(...mesh.dimensions)*1.6);

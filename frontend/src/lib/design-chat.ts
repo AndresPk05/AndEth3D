@@ -1,7 +1,8 @@
-import { apiFetch, requireAuth } from "./api";
+import { apiFetch, ensureDesignSession } from "./api";
 import "./visual-proposals";
 
-const session = requireAuth();
+async function startDesign() {
+const session = await ensureDesignSession();
 type Assessment = { status: string; question: string; suggestions: string[]; issues: string[]; missing: string[] };
 type Turn = { id: string; userText: string; assistantText: string; status: string };
 type Conversation = { id: string; title: string; brief: Record<string, unknown>; assessment: Assessment; messages: Turn[]; busy: boolean; remainingTurns: number; budgetAvailable: boolean };
@@ -57,6 +58,7 @@ function render(data: Conversation) {
     button.addEventListener("click", () => { input.value = text; input.focus(); }); choices.append(button);
   }
   const labels: Record<string, string> = {object: "Objeto", use: "Uso", categoryId: "Categoría", widthMm: "Ancho (mm)", depthMm: "Fondo (mm)", heightMm: "Alto (mm)", quantity: "Cantidad", materialId: "Material", colors: "Colores", personalization: "Personalización", reference: "Referencia descrita"};
+  const briefLines: string[] = [];
   const sheet = document.querySelector("#design-brief")!; sheet.replaceChildren();
   for (const [field, label] of Object.entries(labels)) {
     let value = data.brief[field];
@@ -67,7 +69,9 @@ function render(data: Conversation) {
     const dd = document.createElement("dd"); dd.className = "text-ink-soft break-words whitespace-pre-wrap";
     dd.textContent = value == null || value === "" ? "Por definir" : Array.isArray(value) ? value.join(", ") : String(value);
     row.append(dt, dd); sheet.append(row);
+    if (value != null && value !== "") briefLines.push(`${label}: ${dd.textContent}`);
   }
+  document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: briefLines.join("\n")}}));
   document.querySelector("#brief-state")!.textContent = {Collecting: "Estamos completando los detalles", NeedsReview: "Hay detalles que debemos revisar", ReadyForReview: "Ficha completa para revisión"}[data.assessment.status] ?? "En preparación";
   const issues = document.querySelector("#design-issues")!; issues.replaceChildren();
   for (const text of data.assessment.issues) { const li = document.createElement("li"); li.textContent = text; issues.append(li); }
@@ -98,6 +102,7 @@ async function list(reset = false) {
 function fresh() {
   clearTimeout(timer); active = ""; current = null; select.value = ""; input.value = "";
   messages.replaceChildren(); showMessage("¿Qué te gustaría crear? Cuéntame tu idea y para qué la necesitas.", false);
+  document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: ""}}));
   choices.replaceChildren(); document.querySelector("#design-brief")!.replaceChildren(); document.querySelector("#design-issues")!.replaceChildren();
   document.querySelector("#brief-state")!.textContent = "Se completará mientras conversamos.";
   status.textContent = enabled ? "Escribe tu primera idea para comenzar." : "El asistente aún no está disponible. Puedes usar Cotizar."; lock();
@@ -129,3 +134,6 @@ async function init() {
   await list(); fresh();
 }
 init().catch(e => { status.textContent = `No se pudo cargar el asistente: ${e.message}`; lock(); });
+
+}
+void startDesign().catch(e => { document.querySelector("#chat-status")!.textContent = e.message; });

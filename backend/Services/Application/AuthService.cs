@@ -36,7 +36,7 @@ public class AuthService(AppDbContext db, ITokenIssuer tokens, IPasswordHasher p
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-        if (user is null || !passwords.Verify(request.Password, user.PasswordHash))
+        if (user is null || user.Role == "Guest" || !passwords.Verify(request.Password, user.PasswordHash))
             return AppResult.Unauthorized(new { message = "Email o contraseña incorrectos." });
 
         return AppResult.Ok(new AuthResponse(tokens.CreateToken(user), new UserDto(user.Id, user.Name, user.Email, user.Role)));

@@ -1,4 +1,4 @@
-import {apiFetch,getSession} from "./api";
+import {apiFetch,getDesignSession} from "./api";
 import {estimateSummary,type Estimate} from "./estimate-format";
 import {modelPreview} from "./model-preview";
 type Model={id:string;status:string;outdated:boolean;modelUrl:string;message:string;estimate:Estimate|null;parameters:{template:string;wallMm:number;baseMm:number;rows:number;columns:number}};
@@ -37,7 +37,7 @@ document.querySelector("#parametric-refresh")!.addEventListener("click",()=>void
 form.addEventListener("submit",async event=>{
   event.preventDefault();if(create.disabled||!state)return;const active=id;
   const values=new FormData(form);const parameters={template:String(values.get("template")),wallMm:Number(values.get("wallMm")),baseMm:Number(values.get("baseMm")),columns:Number(values.get("columns")),rows:Number(values.get("rows"))};
-  const key=`andeth-model-${getSession()?.user.id}-${active}-${state.fingerprint}-${JSON.stringify(parameters)}`;
+  const key=`andeth-model-${getDesignSession()?.user.id}-${active}-${state.fingerprint}-${JSON.stringify(parameters)}`;
   const requestId=sessionStorage.getItem(key)??crypto.randomUUID();sessionStorage.setItem(key,requestId);
   const body={requestId,expectedFingerprint:state.fingerprint,parameters,acceptTemplate:true};posting=true;controls();
   try{await apiFetch(`/api/parametric/conversations/${active}`,{method:"POST",body:JSON.stringify(body)});sessionStorage.removeItem(key);if(id===active){await load();history.value=requestId;confirm.checked=false;await show();}}
@@ -45,7 +45,8 @@ form.addEventListener("submit",async event=>{
 });
 quote.addEventListener("click",async()=>{
   const m=selected();if(quote.disabled||!m)return;const active=id;
-  const key=`andeth-model-quote-${getSession()?.user.id}-${m.id}`,requestId=sessionStorage.getItem(key)??crypto.randomUUID();sessionStorage.setItem(key,requestId);posting=true;controls();
+  if (getDesignSession()?.user.role === "Guest") { window.location.hash = "solicitar"; return; }
+  const key=`andeth-model-quote-${getDesignSession()?.user.id}-${m.id}`,requestId=sessionStorage.getItem(key)??crypto.randomUUID();sessionStorage.setItem(key,requestId);posting=true;controls();
   try{const r=await apiFetch<{quoteId:number}>(`/api/parametric/models/${m.id}/quotes`,{method:"POST",body:JSON.stringify({requestId})});if(id===active){result.href=`/cotizacion-diseno?id=${r.quoteId}`;result.hidden=false;status.textContent=`Cotización #${r.quoteId} enviada para revisión.`;confirm.checked=false;}}
   catch(e){if(id===active)status.textContent=(e as Error).message;}finally{posting=false;controls();}
 });

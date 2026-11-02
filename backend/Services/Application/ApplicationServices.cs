@@ -5,6 +5,7 @@ public static class ApplicationServices
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<AuthService>();
+        services.AddScoped<GuestDesignService>();
         services.AddScoped<EstimationService>();
         services.AddScoped<ParametricService>();
         services.AddScoped<OperationsService>();

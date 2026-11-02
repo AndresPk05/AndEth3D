@@ -46,11 +46,33 @@ export function clearSession() {
   sessionStorage.removeItem(KEY);
 }
 
+const DESIGN_KEY = "andeth3d_guest_design";
+export function getDesignSession(): Session | null {
+  const account = getSession();
+  if (account) return account;
+  try {
+    const value = JSON.parse(sessionStorage.getItem(DESIGN_KEY) || "null");
+    const payload = JSON.parse(atob(value.token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    if (payload.exp * 1000 > Date.now()) return value;
+  } catch {}
+  sessionStorage.removeItem(DESIGN_KEY);
+  return null;
+}
+export async function ensureDesignSession(): Promise<Session> {
+  const current = getDesignSession();
+  if (current) return current;
+  const response = await fetch(`${API_URL}/api/design-guest`, {method: "POST"});
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(body?.message || "No pudimos iniciar el asistente. Intenta más tarde o usa Cotizar.");
+  sessionStorage.setItem(DESIGN_KEY, JSON.stringify(body));
+  return body;
+}
+
 export async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const session = getSession();
+  const session = (path.startsWith("/api/chat/") || path.startsWith("/api/estimation/") || path.startsWith("/api/parametric/")) ? getDesignSession() : getSession();
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
@@ -59,6 +81,10 @@ export async function apiFetch<T = unknown>(
     headers["Content-Type"] = "application/json";
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  if (res.status === 401 && session?.user.role === "Guest") {
+    sessionStorage.removeItem(DESIGN_KEY);
+    throw new Error("La visita ha caducado. Recarga Diseña tu idea para comenzar otra.");
+  }
   if (res.status === 401 && session) {
     clearSession();
     window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname)}`);

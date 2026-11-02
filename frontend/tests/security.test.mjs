@@ -38,3 +38,26 @@ test('401 clears the session and redirects to login', async () => {
  assert.equal(api.getSession(), null);
  assert.equal(target, '/login?next=%2Fpedidos');
 });
+
+test('design visitors reuse private session without becoming logged-in customers', async () => {
+ api.clearSession();
+ let calls = 0;
+ const guest = {token: 'h.' + Buffer.from(JSON.stringify({exp: Date.now()/1000+60})).toString('base64url') + '.s', user: {id: 99, role: 'Guest'}};
+ globalThis.fetch = async () => {calls++; return {ok:true, json:async()=>guest};};
+ assert.equal((await api.ensureDesignSession()).user.id,99);
+ assert.equal((await api.ensureDesignSession()).user.id,99);
+ assert.equal(calls,1);
+ assert.equal(api.getSession(),null);
+ let auth;
+ globalThis.fetch = async (_url, options) => {auth = options.headers.Authorization; return {ok:true,status:200,json:async()=>({})};};
+ await api.apiFetch('/api/chat/status'); assert.equal(auth,'Bearer '+guest.token);
+ await api.apiFetch('/api/quotes/guest'); assert.equal(auth,undefined);
+});
+test('expired visitor token reports expiration without a login redirect', async () => {
+ let redirected = false;
+ window.location.assign = () => {redirected = true;};
+ globalThis.fetch = async () => ({status:401,ok:false,json:async()=>({})});
+ await assert.rejects(api.apiFetch('/api/chat/status'),/caducado/);
+ assert.equal(redirected,false);
+ assert.equal(api.getDesignSession(),null);
+});

@@ -1,4 +1,4 @@
-import {apiFetch,getSession} from "./api";
+import {apiFetch,getDesignSession} from "./api";
 import {estimateSummary,type Estimate} from "./estimate-format";
 const status=document.querySelector<HTMLElement>("#estimate-status")!;
 const summary=document.querySelector<HTMLElement>("#estimate-summary")!;
@@ -39,7 +39,8 @@ document.querySelector("#estimate-refresh")!.addEventListener("click",()=>void l
 submit.addEventListener("click",async()=>{
   if(submit.disabled||!state)return;
   const active=id;
-  const key=`andeth-quote-${getSession()?.user.id}-${id}-${proposal.value}-${state.token}`;
+  if (getDesignSession()?.user.role === "Guest") { window.location.hash = "solicitar"; return; }
+  const key=`andeth-quote-${getDesignSession()?.user.id}-${id}-${proposal.value}-${state.token}`;
   const requestId=sessionStorage.getItem(key)??crypto.randomUUID();sessionStorage.setItem(key,requestId);
   const body={requestId,proposalId:proposal.value,estimateToken:state.token,complexity:complexity.value};
   posting=true;controls();
