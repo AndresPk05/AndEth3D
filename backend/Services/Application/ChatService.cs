@@ -98,7 +98,7 @@ public class ChatService(AppDbContext db, IDesignAgent agent, IOptions<ChatOptio
             if (!result.Patch.OffTopic && !string.IsNullOrWhiteSpace(updated.Object))
                 turn.AssistantText = $"Entendí que quieres {updated.Object}. " +
                     (updated.SuggestedFields.Count > 0 ? "Preparé una primera versión con detalles sugeridos, que puedes cambiar. " : "Actualicé los detalles de tu idea. ") +
-                    "Revisa la vista preliminar y dime qué cambiarías; por ejemplo: más pequeño, otro color o añadir un nombre. La fabricación y el precio se revisan aparte.";
+                    "El panel de vista preliminar te mostrará el avance de la imagen. Puedes decirme qué cambiarías; por ejemplo: más pequeño, otro color o añadir un nombre. La fabricación y el precio se revisan aparte.";
             turn.Status = "Completed"; turn.Model = result.Model; turn.ReportedCostUsd = result.CostUsd;
             if (result.CostUsd > turn.ReservedUsd) c.ReservedUsd = Math.Max(c.ReservedUsd, Options.SessionBudgetUsd);
         }

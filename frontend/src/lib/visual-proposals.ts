@@ -1,4 +1,4 @@
-import { apiFetch, API_URL, getDesignSession, clearSession } from "./api";
+import { apiFetch, API_URL, getDesignSession } from "./api";
 
 type Proposal = {id: string; number: number; status: string; outdated: boolean; imageUrl: string | null; message: string; brief: Record<string, unknown>; materialName: string};
 type VisualState = {enabled: boolean; supportsEditing: boolean; fingerprint: string; canGenerate: boolean; reason: string; proposals: Proposal[]};
@@ -13,6 +13,7 @@ let conversationId = "";
 let chatBusy = false;
 let posting = false;
 let state: VisualState | null = null;
+const autoAttempted = new Set<string>();
 let selectedId = "";
 let imageId = "";
 let blobUrl: string | null = null;
@@ -38,14 +39,14 @@ async function show(proposal?: Proposal) {
   document.querySelector("#visual-specification")!.textContent = b ?
     `Objeto: ${b.object}\nUso: ${b.use}\nMedidas: ${b.widthMm} × ${b.depthMm} × ${b.heightMm} mm\nCantidad: ${b.quantity}\nMaterial: ${proposal!.materialName}\nColores: ${(b.colors as string[] ?? []).join(", ")}\nPersonalización: ${b.personalization ?? "Sin especificar"}\nReferencia: ${b.reference ?? "Sin referencia"}` : "Selecciona una propuesta para consultar sus detalles.";
   if (!proposal?.imageUrl) {
-    releaseImage(); empty.classList.remove("hidden"); empty.textContent = proposal?.message ?? "Tu propuesta aparecerá aquí."; return;
+    releaseImage(); empty.classList.remove("hidden"); empty.textContent = proposal?.message ?? state?.reason ?? "Describe tu idea para preparar la primera imagen."; return;
   }
   if (imageId === proposal.id && blobUrl) return;
   releaseImage(); const request = imageRequest; const active = conversationId;
   empty.classList.remove("hidden"); empty.textContent = "Cargando imagen privada…";
   try {
     const response = await fetch(`${API_URL}${proposal.imageUrl}`, {cache: "no-store", headers: {Authorization: `Bearer ${getDesignSession()?.token ?? ""}`}});
-    if (response.status === 401) { clearSession(); window.location.assign("/crear"); throw new Error("Inicia sesión para ver la imagen."); }
+    if (response.status === 401) { throw new Error("Tu visita caducó. Recarga la página para continuar."); }
     if (!response.ok || response.headers.get("Content-Type")?.split(";")[0] !== "image/png") throw new Error("No pudimos cargar la imagen. Pulsa Actualizar propuestas para reintentar.");
     const blob = await response.blob();
     if (request !== imageRequest || active !== conversationId) return;
@@ -56,7 +57,7 @@ async function show(proposal?: Proposal) {
 }
 function render() {
   if (!state) return;
-  status.textContent = state.reason;
+  status.textContent = state.proposals.find(p => !p.outdated)?.message ?? state.reason;
   const reference = parent.value;
   parent.replaceChildren(new Option("Crear desde la ficha", ""));
   if (state.supportsEditing) for (const p of state.proposals.filter(p => p.status === "Completed")) parent.add(new Option(`Propuesta ${p.number}${p.outdated ? " (anterior)" : ""}`, p.id));
@@ -82,9 +83,9 @@ async function reload() {
     const pending = sessionStorage.getItem(pendingKey());
     if (pending) { try { if (state.proposals.some(p => p.id === JSON.parse(pending).requestId)) sessionStorage.removeItem(pendingKey()); } catch { sessionStorage.removeItem(pendingKey()); } }
     render();
-    const autoKey = `andeth-preview-${active}-${state.fingerprint}`;
-    if (!chatBusy && !posting && state.canGenerate && !state.proposals.some(p => !p.outdated) && !sessionStorage.getItem(autoKey)) {
-      sessionStorage.setItem(autoKey, "requested");
+    const autoKey = `${active}:${state.fingerprint}`;
+    if (!chatBusy && !posting && state.canGenerate && !state.proposals.some(p => !p.outdated) && !autoAttempted.has(autoKey)) {
+      autoAttempted.add(autoKey);
       const previous = state.proposals.find(p => p.status === "Completed");
       if (previous && state.supportsEditing) parent.value = previous.id;
       void requestPreview(true);
@@ -109,7 +110,10 @@ document.addEventListener("design:conversation", event => {
   controls(); if (conversationId && (changed || !chatBusy)) void reload();
 });
 parent.addEventListener("change", controls);
-refresh.addEventListener("click", () => void reload());
+refresh.addEventListener("click", () => {
+  if (state) autoAttempted.delete(`${conversationId}:${state.fingerprint}`);
+  void reload();
+});
 async function requestPreview(autoPreview = false) {
   if (!state || generate.disabled) return;
   const active = conversationId;

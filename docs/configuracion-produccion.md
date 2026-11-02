@@ -70,3 +70,16 @@ Una sintaxis válida no garantiza que los valores sean correctos; revisa tambié
 La visita sin cuenta recibe un token privado de 30 minutos, separado del login. Usa una identidad técnica con rol Guest y sin contraseña ni datos de contacto; no es una cuenta con credenciales. No puede acceder a administración, APIs de cuentas ni presentar cotizaciones de diseño sin datos de contacto. Para cotizar usa el formulario en la misma página. Las referencias generadas no se adjuntan automáticamente a esa solicitud manual; se envía la descripción y cualquier archivo que el visitante seleccione.
 
 El límite inicial es de 10 sesiones nuevas de visitantes en 24 horas para toda la aplicación, además de las cuotas y reservas existentes de chat/imágenes. No equivale a IA ilimitada ni gratuita para el negocio. La cuenta de OpenRouter sigue asumiendo el consumo. El control de creación se serializa por proceso; para varias réplicas hace falta coordinación distribuida. No hay renovación ni recuperación de la visita al caducar, ni limpieza automática de identidades/conversaciones antiguas; definir retención antes de ampliar el volumen.
+
+## Si no aparece la imagen preliminar
+
+El chat y las imágenes se activan por separado. La configuración de imágenes se guarda versionada en PostgreSQL, no en una sección nueva de appsettings.
+
+1. Entra como administrador en `/admin/imagenes`.
+2. Comprueba que la clave de OpenRouter esté configurada. Conserva la clave existente en producción; no la publiques.
+3. Marca **Habilitar generación**, revisa el identificador del modelo de imágenes y los límites de presupuesto. Si usas selección por tarea, revisa también Borrador, Detalle y Edición.
+4. Pulsa **Guardar nueva versión**.
+5. Regresa a `/crear` y pulsa **Actualizar propuestas**. El panel junto al chat muestra si está preparando, si terminó o si no está disponible. **Generar / reintentar imagen** permite un nuevo intento cuando la cuota lo permite.
+6. Si queda en preparación, revisa el servicio `andeth3d` y sus logs. Si falla, consulta **Últimas generaciones** en administración. No repitas intentos sin revisar la causa: pueden consumir presupuesto.
+
+El marcador de un intento fallido ya no bloquea la generación al recargar. Los reintentos de transporte conservan el identificador de solicitud para evitar duplicar reservas. Una propuesta fallida ya registrada requiere un reintento manual, evitando bucles de consumo automático.

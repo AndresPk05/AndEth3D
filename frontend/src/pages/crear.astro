@@ -37,18 +37,7 @@ import ParametricDesign from "../components/ParametricDesign.astro";
         </form>
       </section>
       <aside class="bg-white rounded-2xl border border-brand-100 p-5 self-start">
-        <h2 class="font-display text-xl font-bold mb-4">Lo que entendimos y proponemos</h2>
-        <p id="brief-state" class="text-sm font-semibold text-brand-700 mb-4">Se completará mientras conversamos.</p>
-        <p id="brief-summary" class="text-sm mb-4">Describe el objeto y prepararemos una propuesta inicial.</p>
-        <details><summary class="cursor-pointer text-sm font-semibold">Ver detalles y datos sugeridos</summary>
-          <dl id="design-brief" class="space-y-3 text-sm mt-3"></dl>
-        </details>
-        <details class="mt-4"><summary class="cursor-pointer text-sm">Pendiente de revisión antes de fabricar</summary><ul id="design-issues" class="list-disc pl-5 text-sm text-amber-800 mt-4 space-y-2"></ul></details>
-        <p class="text-xs text-ink-soft mt-5">La compatibilidad de medidas es preliminar. Confirmaremos orientación, resistencia y viabilidad al revisar el diseño.</p>
-        <a href="#solicitar" class="inline-block mt-4 text-brand-700 underline">Describir mi pieza y solicitar cotización</a>
-      </aside>
-    </div>
-    <section class="mt-8 bg-white rounded-2xl border border-brand-100 p-5 sm:p-7" aria-label="Propuestas visuales">
+    <section id="vista-preliminar" class="mb-6" aria-label="Propuestas visuales">
       <h2 class="font-display text-2xl font-bold mb-3">Así podría verse tu idea</h2>
       <p class="text-sm text-ink-soft mb-4">Prepararemos una imagen preliminar al entender tu idea. Pide cambios en el chat: «más pequeño», «en rojo» o «con mi nombre». Las opciones marcadas como sugeridas son propuestas que puedes ajustar.</p>
       <p id="visual-status" role="status" aria-live="polite" class="text-sm mb-4">Comienza una conversación para crear tu primera propuesta.</p>
@@ -59,7 +48,7 @@ import ParametricDesign from "../components/ParametricDesign.astro";
         <button id="visual-generate" type="button" disabled class="rounded-full bg-brand-600 text-white px-5 py-3 font-bold disabled:opacity-50">Generar propuesta</button>
         <button id="visual-refresh" type="button" disabled class="rounded-full border border-brand-200 px-5 py-3">Actualizar propuestas</button>
       </div>
-      <div class="grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6">
+      <div class="space-y-4">
         <div>
           <p id="visual-label" class="font-semibold mb-3"></p>
           <p id="visual-outdated" class="hidden bg-amber-50 text-amber-900 rounded-xl p-3 text-sm mb-3">Esta imagen corresponde a una ficha u opciones anteriores. No representa necesariamente tu solicitud actual.</p>
@@ -76,6 +65,18 @@ import ParametricDesign from "../components/ParametricDesign.astro";
         </div>
       </div>
     </section>
+        <h2 class="font-display text-xl font-bold mb-4">Lo que entendimos y proponemos</h2>
+        <p id="brief-state" class="text-sm font-semibold text-brand-700 mb-4">Se completará mientras conversamos.</p>
+        <p id="brief-summary" class="text-sm mb-4">Describe el objeto y prepararemos una propuesta inicial.</p>
+        <details><summary class="cursor-pointer text-sm font-semibold">Ver detalles y datos sugeridos</summary>
+          <dl id="design-brief" class="space-y-3 text-sm mt-3"></dl>
+        </details>
+        <details class="mt-4"><summary class="cursor-pointer text-sm">Pendiente de revisión antes de fabricar</summary><ul id="design-issues" class="list-disc pl-5 text-sm text-amber-800 mt-4 space-y-2"></ul></details>
+        <p class="text-xs text-ink-soft mt-5">La compatibilidad de medidas es preliminar. Confirmaremos orientación, resistencia y viabilidad al revisar el diseño.</p>
+        <a href="#solicitar" class="inline-block mt-4 text-brand-700 underline">Describir mi pieza y solicitar cotización</a>
+      </aside>
+    </div>
+
   </section>
   <details class="max-w-6xl mx-auto px-4 my-6"><summary class="cursor-pointer font-semibold">Opciones avanzadas: estimación y modelos con medidas</summary>
     <DesignEstimate />
