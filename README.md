@@ -99,3 +99,36 @@ npm --prefix frontend test
 ```
 
 Las pruebas de integración usan ASP.NET TestServer y SQLite en memoria para permisos, validación, catálogo y conservación de condiciones. También comparan el snapshot con el modelo PostgreSQL y generan el SQL de migración sin conectarse a una base de datos. No sustituyen probar la migración y escrituras concurrentes contra PostgreSQL antes de desplegar.
+## Asistente de diseño (fase 2)
+
+- Ruta `/crear`: chat autenticado con historial por cliente, ficha lateral, preguntas progresivas y respuestas sugeridas. Disponible desde navegación y desde Cotizar. Se conservan objeto, uso, categoría, medidas en mm, cantidad, material, colores, personalización y referencias descriptivas.
+- El agente extrae cambios estructurados; las preguntas, las restricciones y el estado se calculan en el backend. Los valores no modificados se conservan. Los nombres de equipos, marca/modelo, claves y tarifas no se envían al modelo ni a las respuestas públicas. No existen herramientas del agente para modificar configuración o precios.
+- Solo el propietario accede a su conversación (también se aplica a cuentas administradoras). El historial permanece disponible si se deshabilita el proveedor. Se pagina en grupos de 30 conversaciones.
+- El catálogo se revalida en cada turno y lectura. Las dimensiones se comparan con cada alternativa de fabricación por separado, contemplando permutación de ejes como comprobación preliminar; no garantiza orientación imprimible. Las categorías/materiales/colores no disponibles y las combinaciones de tamaño/color se marcan para revisión. La ficha completa siempre requiere revisión técnica posterior.
+- Referencias en esta fase: texto. No se descargan URLs ni se interpretan archivos/imágenes. No incluye imágenes generadas, precios ni conversión automática de la conversación en cotización (fases posteriores).
+
+### Activar OpenRouter
+
+El chat viene desactivado. Configura secretos mediante User Secrets o variables de entorno, nunca en archivos versionados:
+
+| Variable | Uso |
+| --- | --- |
+| `OpenRouter__Enabled` | `true` para habilitar nuevas conversaciones y mensajes. |
+| `OpenRouter__ApiKey` | Clave privada, solo en backend. |
+| `OpenRouter__Models__0` | Identificador del modelo conversacional compatible con JSON Schema estricto. |
+| `OpenRouter__Models__1`, `OpenRouter__Models__2` | Alternativas opcionales compatibles; OpenRouter gestiona el fallback. |
+| `OpenRouter__SessionBudgetUsd` | Presupuesto conservador máximo por conversación (USD). |
+| `OpenRouter__MaxPromptUsdPerMillion` | Tope de precio de entrada por millón de tokens. |
+| `OpenRouter__MaxCompletionUsdPerMillion` | Tope de precio de salida por millón de tokens. |
+
+Configura antes el catálogo de fabricación con equipos activos, costos reales y materiales/colores disponibles. El servidor valida la configuración de OpenRouter al arrancar cuando está habilitado. Si ningún proveedor/modelo cumple el esquema y los topes, el turno falla conservando la ficha previa. El endpoint está fijado a HTTPS de OpenRouter y no admite URLs del cliente.
+
+Los límites adicionales se encuentran en `appsettings.json`: timeout, tokens de salida, tamaño máximo del prompt, turnos por conversación, solicitudes y conversaciones por día, e intervalo mínimo. Los límites diarios usan UTC.
+
+Cada solicitud reserva presupuesto y cuota en la base de datos **antes** de contactar al proveedor. La reserva usa el límite de bytes del prompt más holgura para tokens de control, tokens de salida y topes de precio; se multiplica por la cantidad de modelos configurados para cubrir alternativas. Es una política conservadora, no una factura de consumo. También se registra `usage.cost` cuando está disponible; si excede la reserva, se bloquean nuevas llamadas en esa conversación. Los fallos, timeouts y llamadas con resultado incierto conservan la reserva. Para un límite global de facturación, configura además el límite de la clave en OpenRouter.
+
+Un identificador por mensaje evita repetir llamadas en reintentos. La reserva usa versiones de concurrencia en conversación y cuota de usuario; una solicitud en curso bloquea otro turno. Si el proceso se interrumpe, el bloqueo expira después del timeout más 30 segundos; el mensaje aparece como fallido y puede enviarse otro. El resultado tardío nunca sobrescribe una ficha más reciente. El frontend conserva el identificador pendiente en sessionStorage por usuario/conversación cuando falla la conexión.
+
+La migración `20261102183204_DesignChat` agrega conversaciones, turnos y cuotas; se aplica al arrancar junto con las migraciones previas. No altera cotizaciones existentes.
+
+Validación de fase 2: `dotnet run --project tests/ManufacturingChecks/ManufacturingChecks.csproj` incluye TestServer, agente simulado, aislamiento de usuarios, límites, reintentos, concurrencia, conservación de ficha y contrato HTTP de OpenRouter con un handler simulado. Se genera el SQL PostgreSQL y se compara el snapshot; las operaciones se prueban en SQLite en memoria. Las llamadas reales requieren configurar credenciales y un modelo, y la migración debe verificarse en una instancia PostgreSQL antes de desplegar.

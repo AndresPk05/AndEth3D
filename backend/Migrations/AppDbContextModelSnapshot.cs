@@ -22,25 +22,128 @@ namespace AndEth3D.Backend.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("AndEth3D.Backend.Models.ManufacturingRevision", b =>
+            modelBuilder.Entity("AndEth3D.Backend.Models.ChatAllowance", b =>
                 {
-                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("integer");
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-                    b.Property<int>("Version").HasColumnType("integer");
-                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
-                    b.Property<int>("CreatedByUserId").HasColumnType("integer");
-                    b.Property<string>("ConfigurationJson").IsRequired().HasColumnType("text");
-                    b.HasKey("Id");
-                    b.HasIndex("Version").IsUnique();
-                    b.ToTable("ManufacturingRevisions");
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Conversations")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Day")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastRequestAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Requests")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("ChatAllowances");
                 });
 
-            modelBuilder.Entity("AndEth3D.Backend.Models.QuoteRequest", b =>
+            modelBuilder.Entity("AndEth3D.Backend.Models.ChatConversation", b =>
                 {
-                    b.Property<int?>("ManufacturingRevisionId").HasColumnType("integer");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("BriefJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("BusyUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("ReservedUsd")
+                        .HasPrecision(14, 6)
+                        .HasColumnType("numeric(14,6)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "UpdatedAt");
+
+                    b.ToTable("ChatConversations");
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.ChatTurn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AssistantText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BriefJson")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ManufacturingRevisionId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Model")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("ReportedCostUsd")
+                        .HasPrecision(14, 6)
+                        .HasColumnType("numeric(14,6)");
+
+                    b.Property<decimal>("ReservedUsd")
+                        .HasPrecision(14, 6)
+                        .HasColumnType("numeric(14,6)");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
                     b.HasIndex("ManufacturingRevisionId");
-                    b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null).WithMany()
-                        .HasForeignKey("ManufacturingRevisionId").OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasIndex("ConversationId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("ChatTurns");
                 });
 
             modelBuilder.Entity("AndEth3D.Backend.Models.GalleryItem", b =>
@@ -77,6 +180,35 @@ namespace AndEth3D.Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GalleryItems");
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.ManufacturingRevision", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConfigurationJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Version")
+                        .IsUnique();
+
+                    b.ToTable("ManufacturingRevisions");
                 });
 
             modelBuilder.Entity("AndEth3D.Backend.Models.Order", b =>
@@ -121,9 +253,10 @@ namespace AndEth3D.Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("QuoteRequestId")
+                        .IsUnique();
 
-                    b.HasIndex("QuoteRequestId").IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("Orders");
                 });
@@ -146,6 +279,9 @@ namespace AndEth3D.Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("ManufacturingRevisionId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Material")
                         .IsRequired()
                         .HasColumnType("text");
@@ -163,6 +299,8 @@ namespace AndEth3D.Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ManufacturingRevisionId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("QuoteRequests");
@@ -178,8 +316,6 @@ namespace AndEth3D.Backend.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("SessionVersion").HasColumnType("integer");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -197,12 +333,47 @@ namespace AndEth3D.Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("SessionVersion")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.ChatAllowance", b =>
+                {
+                    b.HasOne("AndEth3D.Backend.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.ChatConversation", b =>
+                {
+                    b.HasOne("AndEth3D.Backend.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AndEth3D.Backend.Models.ChatTurn", b =>
+                {
+                    b.HasOne("AndEth3D.Backend.Models.ChatConversation", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null)
+                        .WithMany()
+                        .HasForeignKey("ManufacturingRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("AndEth3D.Backend.Models.Order", b =>
@@ -218,6 +389,11 @@ namespace AndEth3D.Backend.Migrations
 
             modelBuilder.Entity("AndEth3D.Backend.Models.QuoteRequest", b =>
                 {
+                    b.HasOne("AndEth3D.Backend.Models.ManufacturingRevision", null)
+                        .WithMany()
+                        .HasForeignKey("ManufacturingRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("AndEth3D.Backend.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")

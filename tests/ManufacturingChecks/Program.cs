@@ -21,7 +21,7 @@ using (var pg = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().Use
 {
     Check(!pg.Database.HasPendingModelChanges(), "PostgreSQL snapshot matches runtime model");
     var sql = pg.GetService<IMigrator>().GenerateScript("20261102000001_SessionVersion");
-    Check(sql.Contains("ManufacturingRevisions") && sql.Contains("ON DELETE RESTRICT"), "PostgreSQL migration script generated");
+    Check(sql.Contains("ManufacturingRevisions") && sql.Contains("ChatConversations") && sql.Contains("ChatTurns") && sql.Contains("ChatAllowances") && sql.Contains("ON DELETE RESTRICT"), "PostgreSQL manufacturing and chat migration scripts generated");
 }
 using var connection = new SqliteConnection("Data Source=:memory:");
 await connection.OpenAsync();
@@ -30,6 +30,10 @@ builder.Logging.ClearProviders();
 builder.WebHost.UseTestServer();
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite(connection));
 builder.Services.AddSingleton<FileStorage>();
+var chatOptions = new ChatOptions { Enabled = true, ApiKey = "test-only-not-a-real-key", Models = ["test/model"], MinimumIntervalSeconds = 0 };
+var designAgent = new FakeDesignAgent();
+builder.Services.AddSingleton<IDesignAgent>(designAgent);
+builder.Services.AddSingleton<IOptions<ChatOptions>>(Options.Create(chatOptions));
 builder.Services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, TestAuth>("Test", _ => {});
 builder.Services.AddAuthorization();
 builder.Services.AddControllers().AddApplicationPart(typeof(ManufacturingController).Assembly);
@@ -95,6 +99,7 @@ Check(frozen.GetProperty("version").GetInt32() == 1 && frozen.GetProperty("confi
     "existing quote retains original rates after change");
 Check((await client.GetAsync("/api/manufacturing/history/1")).IsSuccessStatusCode, "historical revision retrievable");
 Console.WriteLine("Manufacturing integration checks completed.");
+await ChatChecks.Run(client, app.Services, designAgent, chatOptions);
 
 class TestAuth(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
@@ -103,7 +108,7 @@ class TestAuth(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFact
     {
         var role = Request.Headers["X-Test-Role"].FirstOrDefault();
         if (role is null) return Task.FromResult(AuthenticateResult.NoResult());
-        var identity = new ClaimsIdentity([new(ClaimTypes.NameIdentifier, "1"), new(ClaimTypes.Role, role)], Scheme.Name);
+        var identity = new ClaimsIdentity([new(ClaimTypes.NameIdentifier, Request.Headers["X-Test-User"].FirstOrDefault() ?? "1"), new(ClaimTypes.Role, role)], Scheme.Name);
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name)));
     }
 }

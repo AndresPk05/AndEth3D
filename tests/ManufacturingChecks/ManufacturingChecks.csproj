@@ -8,6 +8,10 @@
     <Compile Include="../../backend/Data/AppDbContext.cs" Link="AppDbContext.cs" />
     <Compile Include="../../backend/Controllers/ManufacturingController.cs" Link="ManufacturingController.cs" />
     <Compile Include="../../backend/Controllers/QuotesController.cs" Link="QuotesController.cs" />
+    <Compile Include="../../backend/Controllers/ChatController.cs" Link="ChatController.cs" />
+    <Compile Include="../../backend/Services/ChatOptions.cs" Link="ChatOptions.cs" />
+    <Compile Include="../../backend/Services/DesignPolicy.cs" Link="DesignPolicy.cs" />
+    <Compile Include="../../backend/Services/OpenRouterDesignClient.cs" Link="OpenRouterDesignClient.cs" />
     <Compile Include="../../backend/Services/FileStorage.cs" Link="FileStorage.cs" />
     <Compile Include="../../backend/Migrations/*.cs" Link="Migrations/%(Filename)%(Extension)" />
   </ItemGroup>

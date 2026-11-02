@@ -1,0 +1,43 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+<Layout title="Diseña tu idea" description="Cuéntanos qué quieres crear y define tu idea de impresión 3D con nuestro asistente.">
+  <section class="max-w-6xl mx-auto px-4 py-10">
+    <h1 class="font-display text-3xl sm:text-4xl font-extrabold mb-3">Vamos a darle forma a tu idea</h1>
+    <p class="text-ink-soft mb-6">Cuéntanos qué necesitas. Te ayudaremos a definir medidas, material y detalles, paso a paso. Tu conversación se guarda para que puedas continuar después.</p>
+    <p class="text-sm text-ink-soft mb-6">Este asistente prepara la ficha de tu idea; todavía no genera imágenes ni calcula precios. Los mensajes se procesan con un servicio de inteligencia artificial.</p>
+    <div class="flex flex-wrap gap-3 mb-6 items-end">
+      <label class="flex-1 min-w-48 text-sm font-semibold">Mis ideas
+        <select id="conversation-select" class="block w-full rounded-xl border border-brand-200 px-3 py-2 mt-1"><option value="">Nueva idea</option></select>
+      </label>
+      <button type="button" id="new-chat" class="rounded-full border border-brand-200 px-5 py-2">Nueva idea</button>
+      <button type="button" id="more-chats" class="hidden rounded-full border border-brand-200 px-5 py-2">Cargar más</button>
+    </div>
+    <p id="chat-status" role="status" aria-live="polite" class="text-sm mb-4">Cargando asistente…</p>
+    <div class="grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6">
+      <section aria-label="Conversación" class="bg-white rounded-2xl border border-brand-100 p-4 sm:p-6">
+        <div id="chat-messages" role="log" aria-live="polite" aria-relevant="additions" class="space-y-4 max-h-[55vh] overflow-y-auto mb-5">
+          <p class="rounded-xl bg-brand-50 p-4">¡Hola! ¿Qué te gustaría crear? Puedes describir una idea completa o empezar con algo sencillo, como una caja o un organizador.</p>
+        </div>
+        <div id="chat-choices" class="flex flex-wrap gap-2 mb-4" aria-label="Respuestas sugeridas"></div>
+        <form id="chat-form" class="space-y-3">
+          <label for="chat-input" class="font-semibold text-sm">Tu idea o respuesta</label>
+          <textarea id="chat-input" required maxlength="2000" rows="3" placeholder="Quiero un organizador para mis lápices con mi nombre…" class="w-full rounded-xl border border-brand-200 px-4 py-3" disabled></textarea>
+          <p class="text-xs text-ink-soft">Puedes describir una referencia; en esta etapa no analizamos fotos ni abrimos enlaces. Indica las medidas en cm o mm.</p>
+          <button id="chat-send" disabled class="rounded-full bg-brand-600 text-white px-6 py-3 font-bold disabled:opacity-50">Enviar</button>
+        </form>
+      </section>
+      <aside class="bg-white rounded-2xl border border-brand-100 p-5 self-start">
+        <h2 class="font-display text-xl font-bold mb-4">Tu ficha de diseño</h2>
+        <p id="brief-state" class="text-sm font-semibold text-brand-700 mb-4">Se completará mientras conversamos.</p>
+        <dl id="design-brief" class="space-y-3 text-sm"></dl>
+        <ul id="design-issues" class="list-disc pl-5 text-sm text-amber-800 mt-4 space-y-2"></ul>
+        <p class="text-xs text-ink-soft mt-5">La compatibilidad de medidas es preliminar. Confirmaremos orientación, resistencia y viabilidad al revisar el diseño.</p>
+        <a href="/cotizar" class="inline-block mt-4 text-brand-700 underline">Solicitar asesoría mediante cotización</a>
+      </aside>
+    </div>
+  </section>
+  <script>
+    import "../lib/design-chat";
+  </script>
+</Layout>

@@ -25,6 +25,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddSingleton<FileStorage>();
+builder.Services.AddOptions<ChatOptions>().Bind(builder.Configuration.GetSection("OpenRouter"))
+    .Validate(o => o.Valid(), "Configure OpenRouter credentials, models and positive usage limits.").ValidateOnStart();
+builder.Services.AddHttpClient<IDesignAgent, OpenRouterDesignClient>(http => http.Timeout = Timeout.InfiniteTimeSpan);
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
