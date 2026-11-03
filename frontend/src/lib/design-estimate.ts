@@ -1,5 +1,5 @@
 import {apiFetch,getDesignSession} from "./api";
-import {estimateSummary,type Estimate} from "./estimate-format";
+import {cop,type Estimate} from "./estimate-format";
 const status=document.querySelector<HTMLElement>("#estimate-status")!;
 const summary=document.querySelector<HTMLElement>("#estimate-summary")!;
 const complexity=document.querySelector<HTMLSelectElement>("#estimate-complexity")!;
@@ -12,6 +12,8 @@ let state: {estimate:Estimate;token:string;busy:boolean}|null=null;
 function controls(){submit.disabled=!id||busy||posting||!state||state.busy||!proposal.value||!accept.checked;}
 async function load(){
   const request=++sequence,active=id;state=null;accept.checked=false;controls();summary.textContent="";
+  const price=document.querySelector<HTMLElement>("#simple-price")!;
+  price.textContent="";
   if(!id||busy)return;
   status.textContent="Actualizando estimación.";
   try{
@@ -20,11 +22,14 @@ async function load(){
       apiFetch<{proposals:{id:string;number:number;status:string;outdated:boolean}[]}>(`/api/chat/conversations/${active}/visuals`)
     ]);
     if(request!==sequence||active!==id)return;
+    price.textContent=estimate.estimate.status === "Indicative" && estimate.estimate.averageTotalCop != null
+      ? `Precio aproximado: ${cop(estimate.estimate.averageTotalCop)} COP en total.`
+      : "Te confirmaremos el precio al revisar tu solicitud.";
     state=estimate;const selected=proposal.value;
     proposal.replaceChildren(new Option("Selecciona una propuesta", ""));
     for(const p of visuals.proposals.filter(p=>p.status==="Completed"&&!p.outdated))proposal.add(new Option(`Propuesta ${p.number}`,p.id));
     if([...proposal.options].some(o=>o.value===selected))proposal.value=selected;
-    status.textContent=estimate.estimate.message;summary.textContent=estimateSummary(estimate.estimate);controls();
+    status.textContent=price.textContent;summary.textContent="";controls();
   }catch(e){if(request===sequence){status.textContent=(e as Error).message;controls();}}
 }
 document.addEventListener("design:conversation",event=>{

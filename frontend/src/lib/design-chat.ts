@@ -59,33 +59,24 @@ function render(data: Conversation) {
   }
   const labels: Record<string, string> = {object: "Objeto", use: "Uso", categoryId: "Categoría", widthMm: "Ancho (mm)", depthMm: "Fondo (mm)", heightMm: "Alto (mm)", quantity: "Cantidad", materialId: "Material", colors: "Colores", personalization: "Personalización", reference: "Referencia descrita"};
   const briefLines: string[] = [];
-  const sheet = document.querySelector("#design-brief")!; sheet.replaceChildren();
+
   for (const [field, label] of Object.entries(labels)) {
     let value = data.brief[field];
     if (field === "categoryId") value = catalog.categories.find(c => c.id === value)?.name ?? value;
     if (field === "materialId") value = catalog.materials.find(m => m.id === value)?.name ?? value;
-    const row = document.createElement("div"); row.className = "border-b border-brand-50 pb-2";
-    const dt = document.createElement("dt"); dt.className = "font-semibold"; dt.textContent = label;
-    const dd = document.createElement("dd"); dd.className = "text-ink-soft break-words whitespace-pre-wrap";
-    dd.textContent = value == null || value === "" ? "Por definir" : Array.isArray(value) ? value.join(", ") : String(value);
-    if ((data.brief.suggestedFields as string[] ?? []).includes(field)) {
-      const badge = document.createElement("span"); badge.textContent = " · Sugerido";
-      badge.className = "text-amber-700 font-semibold"; dt.append(badge);
-    }
-    row.append(dt, dd); sheet.append(row);
-    if (value != null && value !== "") briefLines.push(`${label}${(data.brief.suggestedFields as string[] ?? []).includes(field) ? " (sugerido)" : ""}: ${dd.textContent}`);
+    if (value == null || value === "" || (Array.isArray(value) && !value.length)) continue;
+    const suggested = (data.brief.suggestedFields as string[] ?? []).includes(field);
+    briefLines.push(`${label}${suggested ? " (sugerido)" : ""}: ${Array.isArray(value) ? value.join(", ") : value}`);
   }
-  document.querySelector("#brief-summary")!.textContent = `${data.brief.object ?? "Tu idea"}. ${data.brief.widthMm && data.brief.depthMm && data.brief.heightMm ? `Tamaño inicial: ${data.brief.widthMm} × ${data.brief.depthMm} × ${data.brief.heightMm} mm. ` : "Estamos proponiendo el tamaño. "}${(data.brief.suggestedFields as string[] ?? []).length ? "Incluye sugerencias del asistente; puedes cambiarlas en el chat." : "Puedes pedir cambios en el chat."}`;
+  document.querySelector<HTMLElement>("#design-result")!.hidden = !data.brief.object;
+  document.querySelector("#brief-summary")!.textContent = String(data.brief.object ?? "");
   document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: briefLines.join("\n")}}));
-  document.querySelector("#brief-state")!.textContent = {Collecting: "Estamos preparando tu primera versión", NeedsReview: "Concepto listo para explorar; fabricación pendiente", ReadyForReview: "Primera versión lista: puedes pedir cambios"}[data.assessment.status] ?? "En preparación";
-  const issues = document.querySelector("#design-issues")!; issues.replaceChildren();
-  for (const text of data.assessment.issues) { const li = document.createElement("li"); li.textContent = text; issues.append(li); }
   const pending = sessionStorage.getItem(key());
   if (pending) {
     try { const p = JSON.parse(pending); if (data.messages.some(t => t.id === p.requestId)) sessionStorage.removeItem(key()); }
     catch { sessionStorage.removeItem(key()); }
   }
-  status.textContent = data.busy ? "Preparando tu ficha…" : !enabled ? "El asistente no está disponible; puedes consultar tus ideas guardadas." : !data.budgetAvailable || !data.remainingTurns ? "Esta conversación alcanzó su límite. Puedes consultar tu ficha o solicitar asesoría." : "Conversación guardada. Puedes continuar o corregir cualquier dato.";
+  status.textContent = data.busy ? "Preparando tu ficha…" : !enabled ? "El asistente no está disponible; puedes consultar tus ideas guardadas." : !data.budgetAvailable || !data.remainingTurns ? "Esta conversación alcanzó su límite. Puedes consultar tu ficha o solicitar asesoría." : "";
   lock(); messages.scrollTop = messages.scrollHeight;
   clearTimeout(timer);
   if (data.busy) timer = setTimeout(() => load(data.id), 2500);
@@ -106,12 +97,12 @@ async function list(reset = false) {
 }
 function fresh() {
   clearTimeout(timer); active = ""; current = null; select.value = ""; input.value = "";
-  messages.replaceChildren(); showMessage("¿Qué te gustaría crear? Cuéntame tu idea y para qué la necesitas.", false);
+  messages.replaceChildren(); showMessage("Por ejemplo, «quiero un llavero con el nombre de mi gato».", false);
   document.querySelector("#brief-summary")!.textContent = "Describe el objeto y prepararemos una propuesta inicial.";
   document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: ""}}));
-  choices.replaceChildren(); document.querySelector("#design-brief")!.replaceChildren(); document.querySelector("#design-issues")!.replaceChildren();
-  document.querySelector("#brief-state")!.textContent = "Se completará mientras conversamos.";
-  status.textContent = enabled ? "Escribe tu primera idea para comenzar." : "El asistente aún no está disponible. Puedes usar Cotizar."; lock();
+  choices.replaceChildren();
+  document.querySelector<HTMLElement>("#design-result")!.hidden = true;
+  status.textContent = enabled ? "" : "El asistente aún no está disponible. Puedes usar Cotizar."; lock();
 }
 select.addEventListener("change", () => { if (select.value) void load(select.value); else fresh(); });
 create.addEventListener("click", fresh);

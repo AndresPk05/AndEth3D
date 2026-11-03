@@ -1,11 +1,11 @@
   <section id="solicitar" class="max-w-2xl mx-auto px-4 py-14">
     <div class="text-center mb-10">
       <h2 class="font-display text-4xl font-extrabold mb-3">Solicita tu cotización</h2>
-      <p class="text-ink-soft">Revisa los detalles de tu pieza y envíanos la solicitud. Puedes escribirlos directamente o usar la ficha del asistente.</p>
+      <p class="text-ink-soft">Revisa tu idea y dinos cómo contactarte. Te responderemos con el precio.</p>
     </div>
 
     <div id="quote-box" class="bg-white rounded-3xl border border-brand-100 shadow-xl shadow-brand-100 p-8">
-      <button id="use-design-brief" type="button" disabled class="mb-5 text-sm text-brand-700 underline disabled:opacity-50">Usar la ficha del asistente</button>
+      <button id="use-design-brief" hidden type="button" disabled class="mb-5 text-sm text-brand-700 underline disabled:opacity-50">Copiar mi diseño</button>
       <form id="quote-form" class="space-y-5">
         <fieldset id="guest-contact" class="space-y-4">
           <legend class="font-semibold mb-2">Cotiza sin crear una cuenta</legend>
@@ -21,6 +21,7 @@
             placeholder="Ej: Quiero un llavero con el logo de mi empresa, unas 50 unidades en color morado…"
             class="w-full px-4 py-3 rounded-xl border border-brand-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition resize-y"></textarea>
         </div>
+        <details><summary class="cursor-pointer text-sm">Añadir material o archivo (opcional)</summary>
         <div>
           <label for="material" class="block text-sm font-semibold mb-1">Material preferido</label>
           <select id="material"
@@ -34,6 +35,7 @@
             class="w-full text-sm file:mr-4 file:px-4 file:py-2.5 file:rounded-full file:border-0 file:bg-brand-50 file:text-brand-700 file:font-semibold hover:file:bg-brand-100 file:cursor-pointer" />
           <p id="file-help" class="text-xs text-ink-soft mt-1">Imagen, STL, OBJ, 3MF, PDF o ZIP. Máx. 5 MB sin iniciar sesión.</p>
         </div>
+        </details>
         <p id="error" class="hidden text-sm text-red-600 font-medium"></p>
         <button type="submit" id="submit-btn"
           class="w-full py-3.5 rounded-full bg-brand-600 text-white font-bold hover:bg-brand-700 shadow-md shadow-brand-200 transition">
@@ -52,9 +54,7 @@
       </div>
     </div>
 
-    <p class="text-center text-sm text-ink-soft mt-6">
-      Puedes enviar hasta 3 solicitudes por correo en 24 horas sin iniciar sesión.
-    </p>
+
   </section>
 
   <script>
@@ -94,10 +94,14 @@
     document.addEventListener("design:brief", event => {
       latestBrief = (event as CustomEvent<{text: string}>).detail.text;
       useBrief.disabled = !latestBrief;
+      useBrief.hidden = !latestBrief;
+    });
+    document.getElementById("quote-design")?.addEventListener("click", () => {
+      if (latestBrief) useBrief.click();
     });
     useBrief.addEventListener("click", () => {
       const description = document.getElementById("description") as HTMLTextAreaElement;
-      if (description.value.trim() && !confirm("¿Reemplazar la descripción por la ficha actual del asistente?")) return;
+      if (description.value.trim() && description.value !== latestBrief.slice(0, 5000) && !confirm("¿Reemplazar la descripción por la ficha actual del asistente?")) return;
       description.value = latestBrief.slice(0, 5000);
       description.focus();
     });

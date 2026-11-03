@@ -7,7 +7,9 @@ const refresh = document.querySelector<HTMLButtonElement>("#visual-refresh")!;
 const parent = document.querySelector<HTMLSelectElement>("#visual-parent")!;
 const status = document.querySelector<HTMLElement>("#visual-status")!;
 const image = document.querySelector<HTMLImageElement>("#visual-image")!;
-const download = document.querySelector<HTMLAnchorElement>("#visual-download")!;
+// Discourage saving from the preview UI; this cannot prevent screenshots or network access.
+image.addEventListener("contextmenu", event => event.preventDefault());
+image.addEventListener("dragstart", event => event.preventDefault());
 const empty = document.querySelector<HTMLElement>("#visual-empty")!;
 let conversationId = "";
 let chatBusy = false;
@@ -29,15 +31,11 @@ function controls() {
 }
 function releaseImage() {
   imageRequest++; imageId = ""; image.removeAttribute("src"); image.classList.add("hidden");
-  download.classList.add("hidden"); download.removeAttribute("href");
   if (blobUrl) URL.revokeObjectURL(blobUrl); blobUrl = null;
 }
 async function show(proposal?: Proposal) {
   document.querySelector("#visual-label")!.textContent = proposal ? `Propuesta ${proposal.number} · ${proposal.status === "Completed" ? "Lista" : proposal.status === "Failed" ? "No completada" : "En preparación"}` : "";
   document.querySelector("#visual-outdated")!.classList.toggle("hidden", !proposal?.outdated);
-  const b = proposal?.brief;
-  document.querySelector("#visual-specification")!.textContent = b ?
-    `Objeto: ${b.object}\nUso: ${b.use}\nMedidas: ${b.widthMm} × ${b.depthMm} × ${b.heightMm} mm\nCantidad: ${b.quantity}\nMaterial: ${proposal!.materialName}\nColores: ${(b.colors as string[] ?? []).join(", ")}\nPersonalización: ${b.personalization ?? "Sin especificar"}\nReferencia: ${b.reference ?? "Sin referencia"}` : "Selecciona una propuesta para consultar sus detalles.";
   if (!proposal?.imageUrl) {
     releaseImage(); empty.classList.remove("hidden"); empty.textContent = proposal?.message ?? state?.reason ?? "Describe tu idea para preparar la primera imagen."; return;
   }
@@ -52,7 +50,6 @@ async function show(proposal?: Proposal) {
     if (request !== imageRequest || active !== conversationId) return;
     blobUrl = URL.createObjectURL(blob); imageId = proposal.id;
     image.src = blobUrl; image.classList.remove("hidden"); empty.classList.add("hidden");
-    download.href = blobUrl; download.download = `propuesta-${proposal.number}.png`; download.classList.remove("hidden");
   } catch (e) { if (request === imageRequest && active === conversationId) { empty.classList.remove("hidden"); empty.textContent = (e as Error).message; } }
 }
 function render() {
