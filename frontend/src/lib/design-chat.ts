@@ -57,6 +57,32 @@ function render(data: Conversation) {
     button.className = "rounded-full border border-brand-200 text-sm px-3 py-2 hover:bg-brand-50 disabled:opacity-50";
     button.addEventListener("click", () => { input.value = text; input.focus(); }); choices.append(button);
   }
+  const lastTurn = data.messages.at(-1);
+  if (!data.busy && lastTurn) {
+    if (data.brief.object) {
+      const preview = document.createElement("a");
+      preview.href = "#vista-preliminar";
+      preview.textContent = "Ver mi propuesta";
+      preview.className = "rounded-full bg-brand-600 px-5 py-2 text-white font-bold";
+      choices.prepend(preview);
+    } else if (lastTurn.status === "Completed" && lastTurn.assistantText.startsWith("Por ahora necesitamos revisar contigo")) {
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.textContent = "Diseñar con mi descripción";
+      retry.className = "rounded-full bg-brand-600 px-5 py-2 text-white font-bold";
+      retry.addEventListener("click", () => {
+        input.value = lastTurn.userText;
+        input.form?.requestSubmit();
+      });
+      choices.prepend(retry);
+    }
+    const quote = document.createElement("a");
+    quote.href = "#solicitar";
+    quote.textContent = "Cotizar esta idea";
+    quote.className = "underline px-3 py-2 text-brand-700";
+    quote.addEventListener("click", () => document.querySelector<HTMLButtonElement>("#use-design-brief")?.click());
+    choices.append(quote);
+  }
   const labels: Record<string, string> = {object: "Objeto", use: "Uso", categoryId: "Categoría", widthMm: "Ancho (mm)", depthMm: "Fondo (mm)", heightMm: "Alto (mm)", quantity: "Cantidad", materialId: "Material", colors: "Colores", personalization: "Personalización", reference: "Referencia descrita"};
   const briefLines: string[] = [];
 
@@ -68,9 +94,11 @@ function render(data: Conversation) {
     const suggested = (data.brief.suggestedFields as string[] ?? []).includes(field);
     briefLines.push(`${label}${suggested ? " (sugerido)" : ""}: ${Array.isArray(value) ? value.join(", ") : value}`);
   }
-  document.querySelector<HTMLElement>("#design-result")!.hidden = !data.brief.object;
+  if (data.brief.object && !data.busy && location.hash !== "#solicitar") {
+    location.hash = "vista-preliminar";
+  }
   document.querySelector("#brief-summary")!.textContent = String(data.brief.object ?? "");
-  document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: briefLines.join("\n")}}));
+  document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: briefLines.join("\n") || lastTurn?.userText || ""}}));
   const pending = sessionStorage.getItem(key());
   if (pending) {
     try { const p = JSON.parse(pending); if (data.messages.some(t => t.id === p.requestId)) sessionStorage.removeItem(key()); }
@@ -101,11 +129,11 @@ function fresh() {
   document.querySelector("#brief-summary")!.textContent = "Describe el objeto y prepararemos una propuesta inicial.";
   document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: ""}}));
   choices.replaceChildren();
-  document.querySelector<HTMLElement>("#design-result")!.hidden = true;
+
   status.textContent = enabled ? "" : "El asistente aún no está disponible. Puedes usar Cotizar."; lock();
 }
 select.addEventListener("change", () => { if (select.value) void load(select.value); else fresh(); });
-create.addEventListener("click", fresh);
+create.addEventListener("click", () => { location.hash = "idea"; fresh(); });
 more.addEventListener("click", () => list().catch(e => status.textContent = e.message));
 document.querySelector("#chat-form")!.addEventListener("submit", async event => {
   event.preventDefault(); const text = input.value.trim(); if (!text || send.disabled) return;

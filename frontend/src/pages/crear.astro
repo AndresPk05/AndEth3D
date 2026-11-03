@@ -11,6 +11,14 @@ import ParametricDesign from "../components/ParametricDesign.astro";
       <p>Cuéntanos qué quieres imprimir. Te sugerimos los detalles y podrás pedir cambios antes de cotizar.</p>
       <a href="#solicitar" class="inline-block mt-3 text-sm text-brand-700 underline">Ya sé qué quiero. Ir a cotizar</a>
     </header>
+    <nav aria-label="Pasos del diseño" class="mb-6">
+      <ol class="flex flex-wrap gap-2">
+        <li><a data-step="idea" href="#idea" aria-current="step">1. Describe tu idea</a></li>
+        <li><a data-step="vista-preliminar" href="#vista-preliminar">2. Mira tu diseño</a></li>
+        <li><a data-step="solicitar" href="#solicitar">3. Pide tu cotización</a></li>
+      </ol>
+    </nav>
+    <div id="idea">
     <details class="mb-4"><summary class="cursor-pointer text-sm">Mis ideas</summary>
     <div class="flex flex-wrap gap-3 mb-6 items-end">
       <label class="flex-1 min-w-48 text-sm font-semibold">Mis ideas
@@ -21,7 +29,7 @@ import ParametricDesign from "../components/ParametricDesign.astro";
     </div>
     </details>
     <p id="chat-status" role="status" aria-live="polite" class="text-sm mb-4">Cargando asistente…</p>
-    <div class="grid gap-6 has-[#design-result:not([hidden])]:lg:grid-cols-2">
+
       <section aria-label="Conversación" class="bg-white rounded-2xl border border-brand-100 p-4 sm:p-6">
         <div id="chat-messages" role="log" aria-live="polite" aria-relevant="additions" class="space-y-4 max-h-[55vh] overflow-y-auto mb-5">
           <p class="rounded-xl bg-brand-50 p-4">¡Hola! ¿Qué te gustaría crear? Puedes describir una idea completa o empezar con algo sencillo, como una caja o un organizador.</p>
@@ -34,6 +42,7 @@ import ParametricDesign from "../components/ParametricDesign.astro";
           <button id="chat-send" disabled class="rounded-full bg-brand-600 text-white px-6 py-3 font-bold disabled:opacity-50">Enviar</button>
         </form>
       </section>
+    </div>
       <aside id="design-result" hidden class="bg-white rounded-2xl border border-brand-100 p-5 self-start">
     <section id="vista-preliminar" class="mb-6" aria-label="Propuestas visuales">
       <h2 class="font-display text-2xl font-bold mb-3">Así podría verse tu idea</h2>
@@ -50,30 +59,49 @@ import ParametricDesign from "../components/ParametricDesign.astro";
       </div>
       <p id="brief-summary" class="my-3 font-semibold"></p>
       <p id="simple-price" class="text-sm mb-4" aria-live="polite"></p>
+      <a href="#idea" class="inline-block mr-3 text-brand-700 underline">Cambiar mi idea</a>
       <a id="quote-design" href="#solicitar" class="inline-block rounded-full bg-brand-600 text-white px-5 py-3 font-bold">Cotizar esta idea</a>
-      <details class="mt-4"><summary class="cursor-pointer text-sm">Ver otras versiones o volver a intentar</summary>
+        <button id="visual-generate" type="button" disabled class="rounded-full bg-brand-600 text-white px-5 py-3 font-bold disabled:opacity-50">Generar propuesta</button>
+        <button id="visual-refresh" type="button" disabled class="rounded-full border border-brand-200 px-5 py-3">Actualizar propuestas</button>
+      <details class="mt-4"><summary class="cursor-pointer text-sm">Ver otras versiones</summary>
       <div class="flex flex-wrap items-end gap-3 mb-6">
         <label class="text-sm font-semibold flex-1 min-w-48">Imagen de referencia
           <select id="visual-parent" class="block w-full border border-brand-200 rounded-xl px-3 py-2 mt-1"><option value="">Crear desde la ficha</option></select>
         </label>
-        <button id="visual-generate" type="button" disabled class="rounded-full bg-brand-600 text-white px-5 py-3 font-bold disabled:opacity-50">Generar propuesta</button>
-        <button id="visual-refresh" type="button" disabled class="rounded-full border border-brand-200 px-5 py-3">Actualizar propuestas</button>
+
       </div>
         <div id="visual-history" class="flex flex-wrap gap-2"></div>
       </details>
     </section>
       </aside>
-    </div>
 
   </section>
-  <details class="max-w-6xl mx-auto px-4 my-6"><summary class="cursor-pointer font-semibold">Trabajar con un modelo a medida</summary>
+  <details id="advanced-design" hidden class="max-w-6xl mx-auto px-4 my-6"><summary class="cursor-pointer font-semibold">Trabajar con un modelo a medida</summary>
     <DesignEstimate />
     <ParametricDesign />
   </details>
-  <QuoteForm />
+  <div id="quote-step"><QuoteForm /></div>
   <script>
     import "../lib/design-estimate";
     import "../lib/parametric-design";
     import "../lib/design-chat";
+    function displayStep() {
+      const step = ["#solicitar", "#vista-preliminar"].includes(location.hash) ? location.hash.slice(1) : "idea";
+      document.getElementById("idea")!.hidden = step !== "idea";
+      document.getElementById("design-result")!.hidden = step !== "vista-preliminar";
+      document.getElementById("advanced-design")!.hidden = step !== "vista-preliminar";
+      document.getElementById("quote-step")!.hidden = step !== "solicitar";
+      for (const link of document.querySelectorAll<HTMLElement>("[data-step]")) {
+        if (link.dataset.step === step) link.setAttribute("aria-current", "step");
+        else link.removeAttribute("aria-current");
+      }
+    }
+    window.addEventListener("hashchange", displayStep);
+    displayStep();
   </script>
 </Layout>
+
+<style>
+  [data-step] { display: inline-block; padding: .55rem .85rem; border-radius: 2rem; border: 1px solid #ddd6fe; }
+  [data-step][aria-current="step"] { background: #5b21b6; color: white; font-weight: bold; }
+</style>

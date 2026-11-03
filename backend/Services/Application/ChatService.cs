@@ -92,13 +92,19 @@ public class ChatService(AppDbContext db, IDesignAgent agent, IOptions<ChatOptio
             var before = DesignPolicy.Read(c.BriefJson);
             var result = await agent.CompleteAsync(before, DesignPolicy.PublicCapabilities(config), history, turn.UserText, timeout.Token).WaitAsync(timeout.Token);
             var updated = DesignPolicy.Merge(before, result.Patch);
-            var assessment = DesignPolicy.Assess(updated, config);
+            // Preserve an explicitly named piece when the agent omits its object field.
+            if (!result.Patch.OffTopic && string.IsNullOrWhiteSpace(updated.Object) &&
+                !result.Patch.ClearFields.Contains("object"))
+            {
+                var namedPiece = System.Text.RegularExpressions.Regex.Match(turn.UserText.Trim(),
+                    @"^quiero\s+(?<piece>(?:un|una)\s+[^!?\r\n]{2,990})[.!]?$",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (namedPiece.Success) updated.Object = namedPiece.Groups["piece"].Value.TrimEnd('.');
+            }
             c.BriefJson = DesignPolicy.Write(updated); turn.BriefJson = c.BriefJson;
-            turn.AssistantText = (result.Patch.OffTopic ? "Puedo ayudarte a definir objetos para impresión 3D. " : "") + assessment.Question;
-            if (!result.Patch.OffTopic && !string.IsNullOrWhiteSpace(updated.Object))
-                turn.AssistantText = $"Entendí que quieres {updated.Object}. " +
-                    (updated.SuggestedFields.Count > 0 ? "Preparé una primera versión con detalles sugeridos, que puedes cambiar. " : "Actualicé los detalles de tu idea. ") +
-                    "El panel de vista preliminar te mostrará el avance de la imagen. Puedes decirme qué cambiarías; por ejemplo: más pequeño, otro color o añadir un nombre. La fabricación y el precio se revisan aparte.";
+            turn.AssistantText = result.Patch.OffTopic || string.IsNullOrWhiteSpace(updated.Object)
+                ? "¿Qué pieza quieres imprimir? Por ejemplo, un llavero con forma de pug."
+                : $"Tu idea: {updated.Object}. Mira la propuesta o dime qué detalle quieres cambiar.";
             turn.Status = "Completed"; turn.Model = result.Model; turn.ReportedCostUsd = result.CostUsd;
             if (result.CostUsd > turn.ReservedUsd) c.ReservedUsd = Math.Max(c.ReservedUsd, Options.SessionBudgetUsd);
         }
