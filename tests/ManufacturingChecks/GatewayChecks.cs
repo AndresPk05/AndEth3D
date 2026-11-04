@@ -24,7 +24,7 @@ static class GatewayChecks
         client.DefaultRequestHeaders.Remove("X-Test-Role");
         var registration = await client.PostAsJsonAsync("/api/auth/register", new {name = "Example", email = "example@example.invalid", password = "valid-test-password"});
         Check(registration.IsSuccessStatusCode, "auth registration gateway delegates successfully");
-        Check((await client.PostAsJsonAsync("/api/auth/register", new {name = "Example", email = "example@example.invalid", password = "valid-test-password"})).StatusCode == HttpStatusCode.Conflict, "duplicate registration still rejected");
+        Check((await client.PostAsJsonAsync("/api/auth/register", new {name = "Example", email = "example@example.invalid", password = "valid-test-password"})).StatusCode == registration.StatusCode, "duplicate registration returns the same public status");
         Check((await client.PostAsJsonAsync("/api/auth/login", new {email = "example@example.invalid", password = "wrong-password"})).StatusCode == HttpStatusCode.Unauthorized, "invalid login remains unauthorized");
         Check((await client.PostAsJsonAsync("/api/auth/login", new {email = "example@example.invalid", password = "valid-test-password"})).IsSuccessStatusCode, "login response preserved");
         Check((await client.GetAsync("/api/admin/orders")).StatusCode == HttpStatusCode.Unauthorized, "orders require authentication");

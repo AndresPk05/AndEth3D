@@ -27,7 +27,7 @@ import Layout from "../layouts/Layout.astro";
         <p id="error" class="hidden text-sm text-red-600 font-medium"></p>
         <button type="submit" id="submit-btn"
           class="w-full py-3 rounded-full bg-brand-600 text-white font-bold hover:bg-brand-700 shadow-md shadow-brand-200 transition">
-          Entrar
+          Iniciar sesión
         </button>
       </form>
 
@@ -66,7 +66,7 @@ import Layout from "../layouts/Layout.astro";
         error.textContent = (err as Error).message;
         error.classList.remove("hidden");
         btn.disabled = false;
-        btn.textContent = "Entrar";
+        btn.textContent = "Iniciar sesión";
       }
     });
   </script>

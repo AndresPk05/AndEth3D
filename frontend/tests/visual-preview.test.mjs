@@ -4,13 +4,14 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
 const source = stripTypeScriptTypes(readFileSync(new URL('../src/lib/visual-proposals.ts', import.meta.url), 'utf8').replace(/^import .*;\r?\n/, ''));
-async function setup(enabled = true, proposals = []) {
+async function setup(enabled = true, proposals = [], supportsEditing = false) {
   const nodes = new Map(), listeners = new Map(), stored = new Map();
   const element = () => ({value: '', options: [], classList: {add(){}, remove(){}, toggle(){}},
     addEventListener(name, fn){this[name] = fn;}, replaceChildren(...items){this.options = items;},
-    add(item){this.options.push(item);}, append(){}, setAttribute(){}, removeAttribute(){}});
+    add(item){this.options.push(item);}, append(item){this.options.push(item);}, setAttribute(name,value){this[name] = value;}, removeAttribute(){}});
   const get = id => { if (!nodes.has(id)) nodes.set(id, element()); return nodes.get(id); };
   let posts = 0;
+  const requests = [];
   const context = vm.createContext({
     document: {querySelector: get, createElement: element, addEventListener: (n,f) => listeners.set(n,f), dispatchEvent(){}},
     window: {addEventListener(){}}, Option: function(text,value){return {text,value};},
@@ -22,8 +23,8 @@ async function setup(enabled = true, proposals = []) {
       return {ok:true, headers:new Headers({'Content-Type':'image/png'}), blob:async()=>new Blob(['preview'],{type:'image/png'})};
     },
     apiFetch: async (_url, options) => {
-      if(options?.method === 'POST'){posts++; throw new Error('Proveedor temporalmente no disponible');}
-      return {enabled, supportsEditing:false, fingerprint:'brief', canGenerate:enabled,
+      if(options?.method === 'POST'){requests.push(JSON.parse(options.body)); posts++; throw new Error('Proveedor temporalmente no disponible');}
+      return {enabled, supportsEditing, fingerprint:'brief', canGenerate:enabled,
         reason:enabled ? 'Lista para generar' : 'La generación de imágenes no está disponible por ahora.', proposals};
     }
   });
@@ -33,7 +34,7 @@ async function setup(enabled = true, proposals = []) {
   listeners.get('design:conversation')({detail:{id:'conversation',busy:false}});
   const flush = async()=>{for(let i=0;i<15;i++) await Promise.resolve();};
   await flush();
-  return {get, flush, posts:()=>posts};
+  return {get, flush, requests, posts:()=>posts};
 }
 test('automatic preview retries on explicit refresh after failure, without a retry loop', async()=>{
   const app = await setup();
@@ -55,5 +56,41 @@ test('a completed preview opens the private image without requesting a second ge
     imageUrl:'/api/chat/conversations/conversation/visuals/first/image', message:'Lista'}]);
   assert.match(app.get('#visual-image').src, /^blob:/);
   assert.equal(app.posts(),0);
+  URL.revokeObjectURL(app.get('#visual-image').src);
+});
+
+
+test('switching versions shows the selected image without generating another proposal', async () => {
+  const app = await setup(true, [
+    {id:'first', number:1, status:'Completed', outdated:true, imageUrl:'/first', message:'Lista'},
+    {id:'second', number:2, status:'Completed', outdated:false, imageUrl:'/second', message:'Lista'}
+  ]);
+  assert.equal(app.get('#visual-versions').hidden, false);
+  assert.match(app.get('#visual-label').textContent, /Versión 2/);
+  const history = app.get('#visual-history');
+  assert.equal(history.options[0]['aria-pressed'], 'true');
+  history.options[1].click();
+  await app.flush();
+  assert.match(app.get('#visual-label').textContent, /Versión 1/);
+  assert.equal(history.options[1]['aria-pressed'], 'true');
+  assert.equal(history.options[0]['aria-pressed'], 'false');
+  assert.equal(app.posts(), 0);
+  URL.revokeObjectURL(app.get('#visual-image').src);
+});
+
+
+test('a new object never reuses an incompatible previous image', async () => {
+  const app = await setup(true, [{id:'plane', number:1, status:'Completed', outdated:true,
+    canUseAsReference:false, imageUrl:'/plane', message:'Lista'}], true);
+  assert.equal(app.requests.length, 1);
+  assert.equal(app.requests[0].parentProposalId, null);
+  URL.revokeObjectURL(app.get('#visual-image').src);
+});
+
+test('an edit of the same object can reuse its compatible image', async () => {
+  const app = await setup(true, [{id:'plane', number:1, status:'Completed', outdated:true,
+    canUseAsReference:true, imageUrl:'/plane', message:'Lista'}], true);
+  assert.equal(app.requests.length, 1);
+  assert.equal(app.requests[0].parentProposalId, 'plane');
   URL.revokeObjectURL(app.get('#visual-image').src);
 });

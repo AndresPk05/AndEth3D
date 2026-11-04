@@ -1,34 +1,28 @@
-import { apiFetch, ensureDesignSession } from "./api";
+import { apiFetch, ensureDesignSession, getDesignSession } from "./api";
 import "./visual-proposals";
 
 async function startDesign() {
-const session = await ensureDesignSession();
+let session = getDesignSession();
 type Assessment = { status: string; question: string; suggestions: string[]; issues: string[]; missing: string[] };
 type Turn = { id: string; userText: string; assistantText: string; status: string };
 type Conversation = { id: string; title: string; brief: Record<string, unknown>; assessment: Assessment; messages: Turn[]; busy: boolean; remainingTurns: number; budgetAvailable: boolean };
-type Summary = { id: string; title: string };
-const select = document.querySelector<HTMLSelectElement>("#conversation-select")!;
 const input = document.querySelector<HTMLTextAreaElement>("#chat-input")!;
 const send = document.querySelector<HTMLButtonElement>("#chat-send")!;
 const status = document.querySelector<HTMLElement>("#chat-status")!;
 const messages = document.querySelector<HTMLElement>("#chat-messages")!;
 const choices = document.querySelector<HTMLElement>("#chat-choices")!;
-const more = document.querySelector<HTMLButtonElement>("#more-chats")!;
-const create = document.querySelector<HTMLButtonElement>("#new-chat")!;
 let active = "";
 let enabled = false;
 let sending = false;
 let loading = false;
 let current: Conversation | null = null;
-let skip = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let catalog: {materials: {id: string; name: string}[]; categories: {id: string; name: string}[]} = {materials: [], categories: []};
-const key = () => `andeth-chat-pending-${session.user.id}-${active}`;
+const key = () => `andeth-chat-pending-${session?.user.id}-${active}`;
 let visualContext = "";
 function lock() {
   const blocked = !enabled || sending || loading || !!current?.busy || (current !== null && (!current.budgetAvailable || current.remainingTurns === 0));
   input.disabled = blocked; send.disabled = blocked;
-  create.disabled = sending || loading; select.disabled = sending || loading;
   choices.querySelectorAll("button").forEach(button => button.disabled = blocked);
   send.textContent = sending || current?.busy ? "Preparando respuesta…" : "Enviar";
   const context = `${active}:${sending || loading || !!current?.busy}`;
@@ -110,21 +104,15 @@ function render(data: Conversation) {
   if (data.busy) timer = setTimeout(() => load(data.id), 2500);
 }
 async function load(id: string) {
-  clearTimeout(timer); active = id; select.value = id; loading = true; lock();
+  clearTimeout(timer); active = id; loading = true; lock();
   try {
     const data = await apiFetch<Conversation>(`/api/chat/conversations/${id}`);
     if (active === id) render(data);
   } catch (e) { if (active === id) { status.textContent = (e as Error).message; current = null; } }
   finally { if (active === id) { loading = false; lock(); } }
 }
-async function list(reset = false) {
-  if (reset) { skip = 0; select.replaceChildren(new Option("Nueva idea", "")); }
-  const items = await apiFetch<Summary[]>(`/api/chat/conversations?skip=${skip}`);
-  for (const item of items) if (![...select.options].some(o => o.value === item.id)) select.add(new Option(item.title, item.id));
-  skip += items.length; more.classList.toggle("hidden", items.length < 30); select.value = active;
-}
 function fresh() {
-  clearTimeout(timer); active = ""; current = null; select.value = ""; input.value = "";
+  clearTimeout(timer); active = ""; current = null; input.value = "";
   messages.replaceChildren(); showMessage("Por ejemplo, «quiero un llavero con el nombre de mi gato».", false);
   document.querySelector("#brief-summary")!.textContent = "Describe el objeto y prepararemos una propuesta inicial.";
   document.dispatchEvent(new CustomEvent("design:brief", {detail: {text: ""}}));
@@ -132,16 +120,13 @@ function fresh() {
 
   status.textContent = enabled ? "" : "El asistente aún no está disponible. Puedes usar Cotizar."; lock();
 }
-select.addEventListener("change", () => { if (select.value) void load(select.value); else fresh(); });
-create.addEventListener("click", () => { location.hash = "idea"; fresh(); });
-more.addEventListener("click", () => list().catch(e => status.textContent = e.message));
 document.querySelector("#chat-form")!.addEventListener("submit", async event => {
   event.preventDefault(); const text = input.value.trim(); if (!text || send.disabled) return;
   sending = true; lock(); status.textContent = "Preparando tu respuesta…";
   try {
+    session = await ensureDesignSession();
     if (!active) {
       const result = await apiFetch<{id: string}>("/api/chat/conversations", {method: "POST"}); active = result.id;
-      select.add(new Option("Nueva idea", active)); select.value = active;
     }
     let request = {requestId: crypto.randomUUID(), message: text};
     const pending = sessionStorage.getItem(key());
@@ -149,14 +134,13 @@ document.querySelector("#chat-form")!.addEventListener("submit", async event => 
     sessionStorage.setItem(key(), JSON.stringify(request));
     const data = await apiFetch<Conversation>(`/api/chat/conversations/${active}/messages`, {method: "POST", body: JSON.stringify(request)});
     input.value = ""; render(data);
-    const option = [...select.options].find(o => o.value === active); if (option) option.textContent = data.title;
   } catch (e) { status.textContent = `${(e as Error).message} Tu texto sigue aquí para que puedas reintentarlo.`; }
   finally { sending = false; lock(); }
 });
 async function init() {
   const availability = await apiFetch<{enabled: boolean}>("/api/chat/status"); enabled = availability.enabled;
   catalog = await apiFetch<typeof catalog>("/api/manufacturing/catalog");
-  await list(); fresh();
+  fresh();
 }
 init().catch(e => { status.textContent = `No se pudo cargar el asistente: ${e.message}`; lock(); });
 

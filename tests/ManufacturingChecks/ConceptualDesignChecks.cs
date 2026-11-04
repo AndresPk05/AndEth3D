@@ -11,6 +11,12 @@ static class ConceptualDesignChecks
     public static async Task Run(HttpClient client, IServiceProvider services)
     {
         void Check(bool ok, string name) { if (!ok) throw new Exception(name); Console.WriteLine("PASS " + name); }
+        var plane = new DesignBrief { Object = "Avión estrellado", Reference = "Alas rotas", WidthMm = 200, Colors = ["Rojo"] };
+        var car = DesignPolicy.Merge(plane, new DesignPatch { NewIdea = true, Object = "Carro", WidthMm = 100, SuggestedFields = ["widthMm"] });
+        Check(car.Object == "Carro" && car.Reference is null && car.Colors is null && car.WidthMm == 100, "replacement idea does not inherit previous object details");
+        Check(!VisualPolicy.CanUseReference(car, plane), "car cannot inherit airplane image");
+        var smallerPlane = DesignPolicy.Merge(plane, new DesignPatch { WidthMm = 80 });
+        Check(smallerPlane.Reference == plane.Reference && VisualPolicy.CanUseReference(smallerPlane, plane), "same-object edits retain their reference");
         var original = new DesignBrief { Object = "Figura", WidthMm = 90 };
         var suggested = DesignPolicy.Merge(original, new DesignPatch { WidthMm = 50, HeightMm = 100, Colors = ["Rojo"], SuggestedFields = ["widthMm", "heightMm", "colors"] });
         Check(suggested.WidthMm == 90 && !suggested.SuggestedFields.Contains("widthMm") && suggested.SuggestedFields.Contains("heightMm"), "suggestions preserve explicit dimensions and track proposed values");
@@ -39,6 +45,13 @@ static class ConceptualDesignChecks
         var state = await client.GetFromJsonAsync<JsonElement>(url);
         Check(state.GetProperty("canGenerate").GetBoolean(), "incomplete concept can preview despite missing technical catalog");
         var fingerprint = state.GetProperty("fingerprint").GetString();
+        var options = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChatOptions>>().Value;
+        var previousLimit = options.DailyGlobalBudgetUsd;
+        options.DailyGlobalBudgetUsd = 0.000001m;
+        try {
+            var denied = await client.PostAsJsonAsync(url, new { requestId = Guid.NewGuid(), expectedFingerprint = fingerprint, autoPreview = true });
+            Check(denied.StatusCode == HttpStatusCode.TooManyRequests, "global reservation limit blocks a new visitor before enqueue");
+        } finally { options.DailyGlobalBudgetUsd = previousLimit; }
         var first = await client.PostAsJsonAsync(url, new { requestId = Guid.NewGuid(), expectedFingerprint = fingerprint, autoPreview = true });
         Check(first.StatusCode == HttpStatusCode.Accepted, "first preliminary preview reserves and queues normally");
         var second = await client.PostAsJsonAsync(url, new { requestId = Guid.NewGuid(), expectedFingerprint = fingerprint, autoPreview = true });

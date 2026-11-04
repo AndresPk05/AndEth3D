@@ -14,7 +14,7 @@ public class ParametricController(ParametricService service):ControllerBase
     public async Task<IActionResult> Create(Guid id,CreateParametricRequest request)=>(await service.Create(id,request)).ToHttp(this);
     [HttpGet("models/{id:guid}")]
     public async Task<IActionResult> Model(Guid id)=>(await service.Model(id)).ToHttp(this);
-    [HttpPost("models/{id:guid}/quotes")]
+    [HttpPost("models/{id:guid}/quotes"), Authorize(Roles = Roles.Client + "," + Roles.Admin)]
     public async Task<IActionResult> Quote(Guid id,ParametricQuoteRequest request)=>(await service.Quote(id,request)).ToHttp(this);
     [HttpGet("admin"),Authorize(Roles=Roles.Admin)]
     public async Task<IActionResult> Admin()=>(await service.Admin()).ToHttp(this);

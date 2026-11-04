@@ -85,7 +85,13 @@ public class ChatService(AppDbContext db, IDesignAgent agent, IOptions<ChatOptio
         c.BusyUntil = now.AddSeconds(route.TimeoutSeconds + 30);
         if (c.Attempts == 1) c.Title = turn.UserText[..Math.Min(80, turn.UserText.Length)];
         allowance.Requests++; allowance.Version++; allowance.LastRequestAt = now;
-        if (!await SaveReservation()) return AppResult.Conflict(new { message = "Otra solicitud está en curso. Recarga la conversación." });
+        await using (var budget = await DailyAiBudget.Begin(db))
+        {
+            if (!await DailyAiBudget.Fits(db, turn.ReservedUsd, Options.DailyGlobalBudgetUsd))
+                return AppResult.RateLimited(new { message = "Alcanzamos el límite diario del asistente. Puedes solicitar una cotización." });
+            if (!await SaveReservation()) return AppResult.Conflict(new { message = "Otra solicitud está en curso. Recarga la conversación." });
+            await budget.CommitAsync();
+        }
         // Independent of browser cancellation: persist the outcome even if the client disconnects.
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(route.TimeoutSeconds));
         try {
@@ -101,6 +107,7 @@ public class ChatService(AppDbContext db, IDesignAgent agent, IOptions<ChatOptio
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 if (namedPiece.Success) updated.Object = namedPiece.Groups["piece"].Value.TrimEnd('.');
             }
+            if (result.Patch.NewIdea && !result.Patch.OffTopic && updated.Object is { } title) c.Title = title[..Math.Min(80, title.Length)];
             c.BriefJson = DesignPolicy.Write(updated); turn.BriefJson = c.BriefJson;
             turn.AssistantText = result.Patch.OffTopic || string.IsNullOrWhiteSpace(updated.Object)
                 ? "¿Qué pieza quieres imprimir? Por ejemplo, un llavero con forma de pug."

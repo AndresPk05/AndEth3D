@@ -1,10 +1,10 @@
 import { apiFetch, API_URL, getDesignSession } from "./api";
 
-type Proposal = {id: string; number: number; status: string; outdated: boolean; imageUrl: string | null; message: string; brief: Record<string, unknown>; materialName: string};
+type Proposal = {canUseAsReference?: boolean; id: string; number: number; status: string; outdated: boolean; imageUrl: string | null; message: string; brief: Record<string, unknown>; materialName: string};
 type VisualState = {enabled: boolean; supportsEditing: boolean; fingerprint: string; canGenerate: boolean; reason: string; proposals: Proposal[]};
 const generate = document.querySelector<HTMLButtonElement>("#visual-generate")!;
 const refresh = document.querySelector<HTMLButtonElement>("#visual-refresh")!;
-const parent = document.querySelector<HTMLSelectElement>("#visual-parent")!;
+let referenceId = "";
 const status = document.querySelector<HTMLElement>("#visual-status")!;
 const image = document.querySelector<HTMLImageElement>("#visual-image")!;
 // Discourage saving from the preview UI; this cannot prevent screenshots or network access.
@@ -25,16 +25,15 @@ let poll: ReturnType<typeof setTimeout> | undefined;
 function pendingKey() { return `andeth-visual-pending-${getDesignSession()?.user.id}-${conversationId}`; }
 function controls() {
   generate.disabled = posting || chatBusy || !state?.canGenerate;
-  parent.disabled = posting || chatBusy || !state?.supportsEditing;
   refresh.disabled = !conversationId || posting;
-  generate.textContent = posting ? "Guardando solicitud…" : parent.value ? "Actualizar desde esta imagen" : "Generar propuesta";
+  generate.textContent = posting ? "Guardando solicitud…" : referenceId ? "Crear nueva versión" : "Generar propuesta";
 }
 function releaseImage() {
   imageRequest++; imageId = ""; image.removeAttribute("src"); image.classList.add("hidden");
   if (blobUrl) URL.revokeObjectURL(blobUrl); blobUrl = null;
 }
 async function show(proposal?: Proposal) {
-  document.querySelector("#visual-label")!.textContent = proposal ? `Propuesta ${proposal.number} · ${proposal.status === "Completed" ? "Lista" : proposal.status === "Failed" ? "No completada" : "En preparación"}` : "";
+  document.querySelector("#visual-label")!.textContent = proposal ? `Versión ${proposal.number} · ${proposal.status === "Completed" ? "Lista" : proposal.status === "Failed" ? "No completada" : "En preparación"}` : "";
   document.querySelector("#visual-outdated")!.classList.toggle("hidden", !proposal?.outdated);
   if (!proposal?.imageUrl) {
     releaseImage(); empty.classList.remove("hidden"); empty.textContent = proposal?.message ?? state?.reason ?? "Describe tu idea para preparar la primera imagen."; return;
@@ -55,17 +54,19 @@ async function show(proposal?: Proposal) {
 function render() {
   if (!state) return;
   status.textContent = state.proposals.find(p => !p.outdated)?.message ?? state.reason;
-  const reference = parent.value;
-  parent.replaceChildren(new Option("Crear desde la ficha", ""));
-  if (state.supportsEditing) for (const p of state.proposals.filter(p => p.status === "Completed")) parent.add(new Option(`Propuesta ${p.number}${p.outdated ? " (anterior)" : ""}`, p.id));
-  if ([...parent.options].some(o => o.value === reference)) parent.value = reference;
   const history = document.querySelector("#visual-history")!; history.replaceChildren();
-  if (!state.proposals.some(p => p.id === selectedId)) selectedId = state.proposals[0]?.id ?? "";
-  for (const p of state.proposals) {
+  const versions = [...state.proposals].sort((a, b) => b.number - a.number);
+  document.querySelector<HTMLElement>("#visual-versions")!.hidden = versions.length < 2;
+  if (!versions.some(p => p.id === selectedId)) selectedId = versions[0]?.id ?? "";
+  const selected = versions.find(p => p.id === selectedId);
+  referenceId = state.supportsEditing && selected?.canUseAsReference === true && selected.status === "Completed" ? selected.id : "";
+  for (const p of versions) {
     const button = document.createElement("button"); button.type = "button";
-    button.textContent = `Propuesta ${p.number}${p.outdated ? " · Anterior" : ""}`;
-    button.className = "rounded-full border border-brand-200 px-3 py-2 text-sm hover:bg-brand-50";
-    button.setAttribute("aria-pressed", String(selectedId === p.id));
+    const selected = selectedId === p.id;
+    const label = p.status === "Completed" ? (p.id === versions[0].id ? "Más reciente" : "Anterior") : p.status === "Failed" ? "No completada" : "En preparación";
+    button.textContent = `Versión ${p.number} · ${label}${selected ? " · Viendo" : ""}`;
+    button.className = `min-w-0 rounded-xl border px-4 py-3 text-sm text-left break-words transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${selected ? "border-brand-600 bg-brand-600 text-white font-semibold" : "border-brand-200 bg-white text-brand-700 hover:bg-brand-100"}`;
+    button.setAttribute("aria-pressed", String(selected));
     button.addEventListener("click", () => { selectedId = p.id; render(); }); history.append(button);
   }
   controls(); void show(state.proposals.find(p => p.id === selectedId));
@@ -83,8 +84,8 @@ async function reload() {
     const autoKey = `${active}:${state.fingerprint}`;
     if (!chatBusy && !posting && state.canGenerate && !state.proposals.some(p => !p.outdated) && !autoAttempted.has(autoKey)) {
       autoAttempted.add(autoKey);
-      const previous = state.proposals.find(p => p.status === "Completed");
-      if (previous && state.supportsEditing) parent.value = previous.id;
+      const previous = state.proposals.find(p => p.status === "Completed" && p.canUseAsReference === true);
+      if (previous && state.supportsEditing) referenceId = previous.id;
       void requestPreview(true);
     }
     document.dispatchEvent(new CustomEvent("design:visuals"));
@@ -101,12 +102,11 @@ document.addEventListener("design:conversation", event => {
   chatBusy = detail.busy;
   if (changed) {
     clearTimeout(poll); refreshRequest++; releaseImage(); conversationId = detail.id; state = null; selectedId = "";
-    parent.replaceChildren(new Option("Crear desde la ficha", "")); document.querySelector("#visual-history")!.replaceChildren();
+    referenceId = ""; document.querySelector("#visual-history")!.replaceChildren();
     void show(); status.textContent = conversationId ? "Cargando propuestas…" : "Comienza una conversación para crear tu primera propuesta.";
   }
   controls(); if (conversationId && (changed || !chatBusy)) void reload();
 });
-parent.addEventListener("change", controls);
 refresh.addEventListener("click", () => {
   if (state) autoAttempted.delete(`${conversationId}:${state.fingerprint}`);
   void reload();
@@ -114,7 +114,7 @@ refresh.addEventListener("click", () => {
 async function requestPreview(autoPreview = false) {
   if (!state || generate.disabled) return;
   const active = conversationId;
-  let request = {requestId: crypto.randomUUID(), expectedFingerprint: state.fingerprint, parentProposalId: parent.value || null, autoPreview};
+  let request = {requestId: crypto.randomUUID(), expectedFingerprint: state.fingerprint, parentProposalId: referenceId || null, autoPreview};
   const storageKey = pendingKey();
   const pending = sessionStorage.getItem(storageKey);
   if (pending) { try { const saved = JSON.parse(pending); if (saved.expectedFingerprint === request.expectedFingerprint && saved.parentProposalId === request.parentProposalId) request = saved; } catch {} }

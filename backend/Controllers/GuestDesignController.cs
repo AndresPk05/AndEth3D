@@ -8,6 +8,6 @@ namespace AndEth3D.Backend.Controllers;
 [ApiController, Route("api/design-guest")]
 public class GuestDesignController(GuestDesignService service) : ControllerBase
 {
-    [AllowAnonymous, HttpPost, EnableRateLimiting("guest-quotes"), RequestSizeLimit(1024)]
+    [AllowAnonymous, HttpPost, EnableRateLimiting("guest-design"), RequestSizeLimit(1024)]
     public async Task<IActionResult> Create() => (await service.Create()).ToHttp(this);
 }

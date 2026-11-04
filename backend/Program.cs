@@ -98,6 +98,10 @@ using (var scope = app.Services.CreateScope())
     await Seed.EnsureSeededAsync(db, app.Configuration);
 }
 
+// Nginx connects over loopback. Use only its last forwarded address (default trusted proxies).
+app.UseForwardedHeaders(new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions {
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+});
 app.UseExceptionHandler();
 app.Use(async (context, next) =>
 {

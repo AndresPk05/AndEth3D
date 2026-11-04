@@ -33,6 +33,7 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
                 !budget ? "Alcanzaste el límite de propuestas de esta conversación." : usage?.ActiveProposalId is not null ? "Tu propuesta está en preparación." : "Puedes generar una vista conceptual de tu ficha actual.",
             proposals = proposals.Select(p => new { p.Id, p.Number, p.ParentProposalId, p.Status, p.CreatedAt, p.CompletedAt,
                 outdated = p.BriefFingerprint != fingerprint || p.ManufacturingRevisionId != manufacturing?.Id,
+                canUseAsReference = VisualPolicy.CanUseReference(DesignPolicy.Read(conversation.BriefJson), DesignPolicy.Read(p.BriefJson)),
                 brief = DesignPolicy.Read(p.BriefJson),
                 materialName = historicalConfigurations.GetValueOrDefault(p.ManufacturingRevisionId ?? 0, new()).Materials.FirstOrDefault(m => m.Id == DesignPolicy.Read(p.BriefJson).MaterialId)?.Name ?? "Material sugerido, pendiente de revisión",
                 imageUrl = p.Status == "Completed" ? $"/api/chat/conversations/{conversationId}/visuals/{p.Id}/image" : null,
@@ -67,6 +68,8 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
             if (!settings.SupportsEditing) return AppResult.Invalid(new { message = "El modelo configurado no admite editar una imagen anterior." });
             var parent = await db.VisualProposals.AsNoTracking().SingleOrDefaultAsync(p => p.Id == request.ParentProposalId && p.ConversationId == conversationId && p.Status == "Completed");
             if (parent is null) return AppResult.NotFound();
+            if (!VisualPolicy.CanUseReference(brief, DesignPolicy.Read(parent.BriefJson)))
+                return AppResult.Invalid(new { message = "Esta imagen pertenece a otro objeto. Genera una propuesta nueva para tu idea actual." });
         }
         var usage = await db.VisualConversationUsages.SingleOrDefaultAsync(u => u.ConversationId == conversationId);
         if (usage is null) { usage = new() { ConversationId = conversationId }; db.VisualConversationUsages.Add(usage); }
@@ -87,7 +90,10 @@ public class VisualProposalsService(AppDbContext db, IOptions<ChatOptions> crede
         daily.Version++; daily.ReservedAttempts += settings.MaxAttempts;
         // Compare with concurrent chat mutations; no model call occurs inside this transaction.
         conversation.Version++;
-        try { await db.SaveChangesAsync(); }
+        await using var budget = await DailyAiBudget.Begin(db);
+        if (!await DailyAiBudget.Fits(db, reservation, credentials.Value.DailyGlobalBudgetUsd))
+            return AppResult.RateLimited(new { message = "Alcanzamos el límite diario de imágenes. Puedes solicitar una cotización." });
+        try { await db.SaveChangesAsync(); await budget.CommitAsync(); }
         catch (DbUpdateConcurrencyException) { return AppResult.Conflict(new { message = "La conversación cambió. Recarga e intenta de nuevo." }); }
         catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
         { return AppResult.Conflict(new { message = "Otra solicitud se guardó al mismo tiempo. Recarga antes de continuar." }); }

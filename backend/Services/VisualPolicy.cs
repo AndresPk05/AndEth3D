@@ -7,6 +7,8 @@ namespace AndEth3D.Backend.Services;
 
 public static class VisualPolicy
 {
+    public static bool CanUseReference(DesignBrief current, DesignBrief previous) =>
+        !string.IsNullOrWhiteSpace(current.Object) && string.Equals(current.Object.Trim(), previous.Object?.Trim(), StringComparison.OrdinalIgnoreCase);
     public static bool CanPreview(DesignBrief brief) => !string.IsNullOrWhiteSpace(brief.Object);
     public static string Fingerprint(string briefJson) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(DesignPolicy.Write(DesignPolicy.Read(briefJson)))));
     public static VisualSettings Settings(VisualSettingsRevision revision) => JsonSerializer.Deserialize<VisualSettings>(revision.ConfigurationJson, DesignPolicy.Json)!;

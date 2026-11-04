@@ -1,33 +1,27 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import DesignEstimate from "../components/DesignEstimate.astro";
 import QuoteForm from "../components/QuoteForm.astro";
-import ParametricDesign from "../components/ParametricDesign.astro";
 ---
 <Layout title="Diseña tu idea" description="Cuéntanos qué quieres crear y define tu idea de impresión 3D con nuestro asistente.">
   <section class="max-w-6xl mx-auto px-4 py-10">
     <header class="mb-6">
       <h1 class="font-display text-4xl font-extrabold mb-2">Diseña tu idea</h1>
       <p>Cuéntanos qué quieres imprimir. Te sugerimos los detalles y podrás pedir cambios antes de cotizar.</p>
-      <a href="#solicitar" class="inline-block mt-3 text-sm text-brand-700 underline">Ya sé qué quiero. Ir a cotizar</a>
+      <a href="#solicitar" class="inline-flex items-center justify-center gap-2 mt-4 rounded-full border-2 border-brand-200 bg-white px-5 py-2.5 text-sm font-semibold text-brand-700 no-underline transition hover:border-brand-300 hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-600">
+        Cotizar mi idea
+        <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14m-6-6 6 6-6 6" />
+        </svg>
+      </a>
     </header>
     <nav aria-label="Pasos del diseño" class="mb-6">
-      <ol class="flex flex-wrap gap-2">
+      <ol class="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <li><a data-step="idea" href="#idea" aria-current="step">1. Describe tu idea</a></li>
         <li><a data-step="vista-preliminar" href="#vista-preliminar">2. Mira tu diseño</a></li>
         <li><a data-step="solicitar" href="#solicitar">3. Pide tu cotización</a></li>
       </ol>
     </nav>
     <div id="idea">
-    <details class="mb-4"><summary class="cursor-pointer text-sm">Mis ideas</summary>
-    <div class="flex flex-wrap gap-3 mb-6 items-end">
-      <label class="flex-1 min-w-48 text-sm font-semibold">Mis ideas
-        <select id="conversation-select" class="block w-full rounded-xl border border-brand-200 px-3 py-2 mt-1"><option value="">Nueva idea</option></select>
-      </label>
-      <button type="button" id="new-chat" class="rounded-full border border-brand-200 px-5 py-2">Nueva idea</button>
-      <button type="button" id="more-chats" class="hidden rounded-full border border-brand-200 px-5 py-2">Cargar más</button>
-    </div>
-    </details>
     <p id="chat-status" role="status" aria-live="polite" class="text-sm mb-4">Cargando asistente…</p>
 
       <section aria-label="Conversación" class="bg-white rounded-2xl border border-brand-100 p-4 sm:p-6">
@@ -43,53 +37,47 @@ import ParametricDesign from "../components/ParametricDesign.astro";
         </form>
       </section>
     </div>
-      <aside id="design-result" hidden class="bg-white rounded-2xl border border-brand-100 p-5 self-start">
+      <aside id="design-result" hidden class="bg-white rounded-2xl border border-brand-100 p-4 sm:p-6 min-w-0">
     <section id="vista-preliminar" class="mb-6" aria-label="Propuestas visuales">
       <h2 class="font-display text-2xl font-bold mb-3">Así podría verse tu idea</h2>
       <p class="text-sm text-ink-soft mb-4">Es una vista previa. Si quieres cambiar algo, escríbelo en el chat.</p>
       <p id="visual-status" role="status" aria-live="polite" class="text-sm mb-4">Comienza una conversación para crear tu primera propuesta.</p>
+      <section id="visual-versions" hidden class="mb-5 rounded-xl bg-brand-50 p-4" aria-label="Versiones de tu diseño">
+        <h3 class="font-semibold">Versiones de tu diseño</h3>
+        <p class="text-sm text-ink-soft mt-1 mb-3">Elige una versión para verla. Puedes volver a las anteriores en cualquier momento.</p>
+        <div id="visual-history" class="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 gap-2"></div>
+      </section>
       <div class="space-y-4">
         <div>
           <p id="visual-label" class="font-semibold mb-3"></p>
           <p id="visual-outdated" class="hidden bg-amber-50 text-amber-900 rounded-xl p-3 text-sm mb-3">Esta es una versión anterior de tu idea.</p>
-          <img id="visual-image" draggable="false" style="-webkit-touch-callout: none; user-select: none;" alt="Propuesta conceptual del objeto solicitado" class="hidden w-full max-h-[600px] object-contain rounded-xl bg-brand-50" />
+          <img id="visual-image" draggable="false" style="-webkit-touch-callout: none; user-select: none;" alt="Propuesta conceptual del objeto solicitado" class="hidden w-full h-auto max-h-[55svh] object-contain rounded-xl bg-brand-50" />
           <p id="visual-empty" class="rounded-xl bg-brand-50 p-8 text-center text-ink-soft">Tu propuesta aparecerá aquí.</p>
           <p class="text-xs text-ink-soft mt-4">Imagen de referencia creada con IA. Revisaremos los detalles antes de imprimir.</p>
         </div>
       </div>
       <p id="brief-summary" class="my-3 font-semibold"></p>
-      <p id="simple-price" class="text-sm mb-4" aria-live="polite"></p>
-      <a href="#idea" class="inline-block mr-3 text-brand-700 underline">Cambiar mi idea</a>
-      <a id="quote-design" href="#solicitar" class="inline-block rounded-full bg-brand-600 text-white px-5 py-3 font-bold">Cotizar esta idea</a>
-        <button id="visual-generate" type="button" disabled class="rounded-full bg-brand-600 text-white px-5 py-3 font-bold disabled:opacity-50">Generar propuesta</button>
-        <button id="visual-refresh" type="button" disabled class="rounded-full border border-brand-200 px-5 py-3">Actualizar propuestas</button>
-      <details class="mt-4"><summary class="cursor-pointer text-sm">Ver otras versiones</summary>
-      <div class="flex flex-wrap items-end gap-3 mb-6">
-        <label class="text-sm font-semibold flex-1 min-w-48">Imagen de referencia
-          <select id="visual-parent" class="block w-full border border-brand-200 rounded-xl px-3 py-2 mt-1"><option value="">Crear desde la ficha</option></select>
-        </label>
-
+      <p id="simple-price" class="text-sm mb-4">Te confirmaremos el precio al revisar tu solicitud.</p>
+      <div class="preview-actions" aria-label="Acciones de tu diseño">
+        <a id="quote-design" href="#solicitar" class="preview-action bg-brand-600 text-white hover:bg-brand-700">Cotizar esta idea</a>
+        <a href="#idea" class="preview-action border border-brand-200 text-brand-700 hover:bg-brand-50">Cambiar mi idea</a>
       </div>
-        <div id="visual-history" class="flex flex-wrap gap-2"></div>
-      </details>
+      <div class="preview-actions mt-3" aria-label="Acciones de la imagen">
+        <button id="visual-generate" type="button" disabled class="preview-action border border-brand-200 text-brand-700 hover:bg-brand-50 disabled:opacity-50">Generar propuesta</button>
+        <button id="visual-refresh" type="button" disabled class="preview-action border border-brand-200 text-brand-700 hover:bg-brand-50 disabled:opacity-50">Actualizar propuestas</button>
+      </div>
+
     </section>
       </aside>
 
   </section>
-  <details id="advanced-design" hidden class="max-w-6xl mx-auto px-4 my-6"><summary class="cursor-pointer font-semibold">Trabajar con un modelo a medida</summary>
-    <DesignEstimate />
-    <ParametricDesign />
-  </details>
   <div id="quote-step"><QuoteForm /></div>
   <script>
-    import "../lib/design-estimate";
-    import "../lib/parametric-design";
     import "../lib/design-chat";
     function displayStep() {
       const step = ["#solicitar", "#vista-preliminar"].includes(location.hash) ? location.hash.slice(1) : "idea";
       document.getElementById("idea")!.hidden = step !== "idea";
       document.getElementById("design-result")!.hidden = step !== "vista-preliminar";
-      document.getElementById("advanced-design")!.hidden = step !== "vista-preliminar";
       document.getElementById("quote-step")!.hidden = step !== "solicitar";
       for (const link of document.querySelectorAll<HTMLElement>("[data-step]")) {
         if (link.dataset.step === step) link.setAttribute("aria-current", "step");
@@ -102,6 +90,14 @@ import ParametricDesign from "../components/ParametricDesign.astro";
 </Layout>
 
 <style>
-  [data-step] { display: inline-block; padding: .55rem .85rem; border-radius: 2rem; border: 1px solid #ddd6fe; }
+  [data-step] { display: block; height: 100%; padding: .55rem .85rem; border-radius: 2rem; border: 1px solid #ddd6fe; }
   [data-step][aria-current="step"] { background: #5b21b6; color: white; font-weight: bold; }
+  .preview-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+  .preview-action { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; max-width: 100%; padding: .75rem 1.25rem; border-radius: 1.5rem; font-weight: 600; text-align: center; text-decoration: none; overflow-wrap: anywhere; }
+  .preview-action:focus-visible { outline: 2px solid #7c3aed; outline-offset: 3px; }
+  #vista-preliminar { overflow-wrap: anywhere; }
+  @media (max-width: 639px) {
+    .preview-actions { flex-direction: column; }
+    .preview-action { width: 100%; }
+  }
 </style>

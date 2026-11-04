@@ -30,6 +30,8 @@ static class GuestDesignChecks
         Check((await client.GetAsync($"/api/chat/conversations/{Guid.NewGuid()}")).StatusCode == HttpStatusCode.NotFound, "guest cannot access foreign conversations");
         Check((await client.GetAsync("/api/auth/me")).StatusCode == HttpStatusCode.Forbidden, "guest identity cannot access account APIs");
         Check((await client.PostAsJsonAsync($"/api/estimation/conversations/{id}/quotes", new {})).StatusCode == HttpStatusCode.Forbidden, "guest quote requires contact form instead of anonymous internal user");
+        foreach (var route in new[] { $"/api/estimation/conversations/{id}/quotes/", $"/api/parametric/models/{id}/quotes/" })
+            Check((await client.PostAsJsonAsync(route, new {})).StatusCode == HttpStatusCode.Forbidden, "guest cannot bypass role policy with a trailing slash");
         Check((await client.GetAsync("/api/admin/orders")).StatusCode == HttpStatusCode.Forbidden, "guest cannot access administration");
         client.DefaultRequestHeaders.Remove("X-Test-User");
         client.DefaultRequestHeaders.Remove("X-Test-Role");

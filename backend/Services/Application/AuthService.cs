@@ -11,33 +11,41 @@ public class AuthService(AppDbContext db, ITokenIssuer tokens, IPasswordHasher p
     {
         var email = request.Email.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(email) || request.Password.Length < 12 || Encoding.UTF8.GetByteCount(request.Password) > 72)
-            return AppResult.Invalid(new { message = "Nombre, email válido y contraseña de al menos 12 caracteres son obligatorios." });
+            return AppResult.Invalid(new { message = "Nombre, email vÃƒÂ¡lido y contraseÃƒÂ±a de al menos 12 caracteres son obligatorios." });
 
+        var receipt = AppResult.Ok(new { message = "ContinÃƒÂºa al inicio de sesiÃƒÂ³n." });
+        var hash = passwords.Hash(request.Password);
         if (await db.Users.AnyAsync(u => u.Email == email))
-            return AppResult.Conflict(new { message = "Ya existe una cuenta con ese email." });
+            return receipt;
 
         var user = new User
         {
             Name = request.Name.Trim(),
             Email = email,
-            PasswordHash = passwords.Hash(request.Password),
+            PasswordHash = hash,
             Role = Roles.Client,
         };
 
         db.Users.Add(user);
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505", ConstraintName: "IX_Users_Email" })
-        { return AppResult.Conflict(new { message = "Ya existe una cuenta con ese email." }); }
+        { return receipt; }
 
-        return AppResult.Ok(new AuthResponse(tokens.CreateToken(user), new UserDto(user.Id, user.Name, user.Email, user.Role)));
+        return receipt;
     }
     public async Task<AppResult> Login(LoginRequest request)
     {
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-        if (user is null || user.Role == "Guest" || !passwords.Verify(request.Password, user.PasswordHash))
+        if (user is null || user.Role == "Guest")
+        {
+            // Spend comparable password-hashing work for unknown and existing accounts.
+            passwords.Hash(request.Password);
             return AppResult.Unauthorized(new { message = "Email o contraseña incorrectos." });
+        }
+        if (!passwords.Verify(request.Password, user.PasswordHash))
+            return AppResult.Unauthorized(new { message = "Email o contraseÃƒÂ±a incorrectos." });
 
         return AppResult.Ok(new AuthResponse(tokens.CreateToken(user), new UserDto(user.Id, user.Name, user.Email, user.Role)));
     }

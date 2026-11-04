@@ -9,7 +9,7 @@ namespace AndEth3D.Backend.Controllers;
 [ApiController, Authorize, Route("api/chat")]
 public class ChatController(ChatService service) : ControllerBase
 {
-    [HttpGet("status")]
+    [AllowAnonymous, HttpGet("status")]
     public IActionResult Status() => service.Status().ToHttp(this);
     [HttpGet("conversations")]
     public async Task<IActionResult> List([FromQuery, Range(0, 100000)] int skip = 0) => (await service.List(skip)).ToHttp(this);

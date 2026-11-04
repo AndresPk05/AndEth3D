@@ -9,9 +9,9 @@ namespace AndEth3D.Backend.Controllers;
 [ApiController, Route("api/auth")]
 public class AuthController(AuthService service) : ControllerBase
 {
-    [HttpPost("register")]
+    [HttpPost("register"), Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("register")]
     public async Task<IActionResult> Register(RegisterRequest request) => (await service.Register(request)).ToHttp(this);
-    [HttpPost("login")]
+    [HttpPost("login"), Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("login")]
     public async Task<IActionResult> Login(LoginRequest request) => (await service.Login(request)).ToHttp(this);
     [Authorize, HttpGet("me")]
     public async Task<IActionResult> Me() => (await service.Me()).ToHttp(this);

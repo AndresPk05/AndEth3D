@@ -60,5 +60,6 @@ public class DesignBrief
 public class DesignPatch : DesignBrief
 {
     public bool OffTopic { get; set; }
+    public bool NewIdea { get; set; }
     public List<string> ClearFields { get; set; } = [];
 }

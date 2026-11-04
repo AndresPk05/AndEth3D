@@ -44,7 +44,7 @@ import Layout from "../layouts/Layout.astro";
   </section>
 
   <script>
-    import { apiFetch, saveSession, getSession, type Session } from "../lib/api";
+    import { apiFetch, getSession } from "../lib/api";
 
     if (getSession()) window.location.href = "/";
 
@@ -58,7 +58,7 @@ import Layout from "../layouts/Layout.astro";
       btn.disabled = true;
       btn.textContent = "Creando cuenta…";
       try {
-        const session = await apiFetch<Session>("/api/auth/register", {
+        await apiFetch("/api/auth/register", {
           method: "POST",
           body: JSON.stringify({
             name: (document.getElementById("name") as HTMLInputElement).value,
@@ -66,8 +66,7 @@ import Layout from "../layouts/Layout.astro";
             password: (document.getElementById("password") as HTMLInputElement).value,
           }),
         });
-        saveSession(session);
-        window.location.href = "/cotizar";
+        window.location.href = "/login";
       } catch (err) {
         error.textContent = (err as Error).message;
         error.classList.remove("hidden");

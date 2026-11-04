@@ -36,6 +36,11 @@ public static class DesignPolicy
             throw new InvalidDataException("Invalid design output.");
         var result = Read(Write(before));
         if (patch.OffTopic) return result;
+        if (patch.NewIdea) {
+            if (string.IsNullOrWhiteSpace(patch.Object)) throw new InvalidDataException("New idea requires an object.");
+            before = new DesignBrief();
+            result = new DesignBrief();
+        }
         foreach (var property in typeof(DesignBrief).GetProperties().Where(p => p.Name != nameof(DesignBrief.SuggestedFields)))
         {
             var field = JsonNamingPolicy.CamelCase.ConvertName(property.Name);

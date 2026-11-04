@@ -15,7 +15,7 @@ public class EstimationController(EstimationService service) : ControllerBase
     public async Task<IActionResult> Save(SaveCalibrationRequest request) => (await service.Save(request)).ToHttp(this);
     [HttpGet("conversations/{id:guid}")]
     public async Task<IActionResult> Estimate(Guid id, [FromQuery, RegularExpression("^(simple|standard|complex)$")] string complexity = "standard") => (await service.Estimate(id, complexity)).ToHttp(this);
-    [HttpPost("conversations/{id:guid}/quotes")]
+    [HttpPost("conversations/{id:guid}/quotes"), Authorize(Roles = Roles.Client + "," + Roles.Admin)]
     public async Task<IActionResult> Submit(Guid id, SubmitDesignQuoteRequest request) => (await service.Submit(id, request)).ToHttp(this);
     [HttpGet("quotes/{id:int}")]
     public async Task<IActionResult> Detail(int id) => (await service.Detail(id)).ToHttp(this);
