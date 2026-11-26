@@ -1,0 +1,26 @@
+---
+import Layout from "./Layout.astro";
+import AdminNavigation from "../components/AdminNavigation.astro";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<Layout title={title}>
+  <div class="mx-auto grid max-w-[90rem] items-start gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-8 lg:py-10">
+    <AdminNavigation />
+    <section id="admin-content" aria-labelledby="admin-title" tabindex="-1" class="min-w-0 scroll-mt-24 focus-visible:outline-2 focus-visible:outline-brand-700">
+      <slot />
+    </section>
+  </div>
+</Layout>
+
+<style>
+  #admin-content :global(:is(a, button, input, select, textarea, summary):focus-visible) {
+    outline: 2px solid var(--color-brand-700);
+    outline-offset: 3px;
+  }
+</style>

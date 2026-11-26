@@ -1,6 +1,5 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import AdminTabs from "../../components/AdminTabs.astro";
+import AdminLayout from "../../layouts/AdminLayout.astro";
 const fields=[
   ["quantity","Cantidad fabricada",1,10000,1], ["grams","Filamento total del lote (g)",0.01,100000000,0.01],
   ["machineHours","Horas de máquina totales",0.01,1000000,0.01], ["designHours","Horas de diseño totales",0,1000,0.01],
@@ -9,10 +8,8 @@ const fields=[
   ["otherCostCop","Otros costos reales (COP)",0,1000000000,0.01]
 ];
 ---
-<Layout title="Admin - Operación y resultados">
-  <section class="max-w-6xl mx-auto px-4 py-10">
-    <AdminTabs />
-    <h1 class="text-3xl font-bold mb-4">Operación y resultados reales</h1>
+<AdminLayout title="Admin - Operación y resultados">
+    <h1 id="admin-title" class="text-3xl font-bold mb-4">Operación y resultados reales</h1>
     <p id="operations-status" role="status" aria-live="polite">Cargando.</p>
     <label>Período<select id="operations-days" class="border rounded p-2 m-3"><option value="7">7 días</option><option value="30" selected>30 días</option><option value="90">90 días</option><option value="365">365 días</option></select></label>
     <button id="operations-refresh" type="button" class="border rounded-full px-4 py-2">Actualizar métricas</button>
@@ -41,6 +38,5 @@ const fields=[
     <a href="/admin/estimacion" class="ml-3 underline">Revisar calibración completa</a>
     <h2 class="text-2xl font-bold mt-8 mb-3">Últimos resultados del período</h2>
     <div id="production-records" class="overflow-auto"></div>
-  </section>
   <script>import "../../lib/operations";</script>
-</Layout>
+</AdminLayout>

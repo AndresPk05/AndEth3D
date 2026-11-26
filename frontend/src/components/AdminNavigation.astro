@@ -1,0 +1,60 @@
+---
+const groups = [
+  { label: "Ventas", links: [
+    { href: "/admin/cotizaciones", label: "Cotizaciones" },
+    { href: "/admin/pedidos", label: "Pedidos" },
+  ] },
+  { label: "Producción", links: [
+    { href: "/admin/operacion", label: "Operación" },
+    { href: "/admin/fabricacion", label: "Fabricación" },
+    { href: "/admin/laminado", label: "Laminado" },
+    { href: "/admin/estimacion", label: "Estimación" },
+    { href: "/admin/imagenes", label: "Imágenes IA" },
+  ] },
+  { label: "Sitio", links: [
+    { href: "/admin/galeria", label: "Galería" },
+    { href: "/admin/usuarios", label: "Usuarios" },
+  ] },
+];
+const current = Astro.url.pathname.replace(/\/+$/, "");
+const activeLabel = groups.flatMap(({ links }) => links).find(({ href }) => href === current)?.label;
+---
+
+<aside class="rounded-2xl border border-brand-100 bg-white lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
+  <a href="#admin-content" class="sr-only focus:not-sr-only focus:block focus:px-4 focus:py-3 focus:font-semibold focus:text-brand-800">Saltar al contenido del panel</a>
+  <details open id="admin-menu" class="group">
+    <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-700 lg:hidden">
+      <span class="font-display font-bold text-ink">Administración</span>
+      <span class="flex items-center gap-2 text-sm font-semibold text-brand-800">
+        {activeLabel}
+        <span aria-hidden="true" class="inline-block group-open:rotate-180">▾</span>
+      </span>
+    </summary>
+    <p class="hidden border-b border-brand-100 px-4 py-4 font-display font-bold text-ink lg:block">Administración</p>
+    <nav aria-label="Secciones de administración" class="space-y-4 p-3">
+      {groups.map(({ label, links }) => (
+        <div>
+          <p class="mb-1 px-3 text-xs font-bold uppercase tracking-wide text-ink-soft">{label}</p>
+          <ul>
+            {links.map(({ href, label }) => (
+              <li>
+                <a href={href} aria-current={current === href ? "page" : undefined} class:list={[
+                  "flex min-h-11 items-center rounded-lg border-l-4 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-700",
+                  current === href ? "border-brand-700 bg-brand-50 font-bold text-brand-800" : "border-transparent font-medium text-ink hover:bg-brand-50",
+                ]}>{label}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  </details>
+</aside>
+
+<script>
+  const menu = document.querySelector<HTMLDetailsElement>("#admin-menu")!;
+  const desktop = window.matchMedia("(min-width: 64rem)");
+  const syncMenu = () => { menu.open = desktop.matches; };
+  syncMenu();
+  desktop.addEventListener("change", syncMenu);
+</script>

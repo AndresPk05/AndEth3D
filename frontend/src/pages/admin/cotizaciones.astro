@@ -1,17 +1,12 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import AdminTabs from "../../components/AdminTabs.astro";
+import AdminLayout from "../../layouts/AdminLayout.astro";
 ---
 
-<Layout title="Admin — Cotizaciones">
-  <section class="max-w-6xl mx-auto px-4 py-10">
-    <AdminTabs />
-    <h1 class="font-display text-3xl font-extrabold mb-6">Cotizaciones</h1>
+<AdminLayout title="Admin — Cotizaciones">
+    <h1 id="admin-title" class="font-display text-3xl font-extrabold mb-6">Cotizaciones</h1>
     <div id="quotes-list" class="space-y-4">
       <p class="text-ink-soft">Cargando…</p>
     </div>
-  </section>
-
   <script>
     import { downloadQuote, escapeHtml, apiFetch, requireAuth } from "../../lib/api";
     import { manufacturingSummary } from "../../lib/manufacturing-summary";
@@ -143,4 +138,4 @@ import AdminTabs from "../../components/AdminTabs.astro";
       container.innerHTML = `<p class="text-red-600">${escapeHtml((err as Error).message)}</p>`;
     }
   </script>
-</Layout>
+</AdminLayout>

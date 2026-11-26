@@ -1,11 +1,8 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import AdminTabs from "../../components/AdminTabs.astro";
+import AdminLayout from "../../layouts/AdminLayout.astro";
 ---
-<Layout title="Admin - Fabricación">
-  <section class="max-w-6xl mx-auto px-4 py-10">
-    <AdminTabs />
-    <h1 class="font-display text-3xl font-extrabold mb-3">Fabricación y precios</h1>
+<AdminLayout title="Admin - Fabricación">
+    <h1 id="admin-title" class="font-display text-3xl font-extrabold mb-3">Fabricación y precios</h1>
     <p class="text-ink-soft mb-6">Configura equipos, materiales disponibles y tarifas en COP. Cada guardado crea una versión y conserva las condiciones de cotizaciones anteriores.</p>
     <p class="mb-6 rounded-xl bg-brand-50 p-4">Antes de habilitar un material, registra su costo real y al menos un color disponible. Activa también un equipo compatible. Las tarifas no calculan precios automáticamente en esta fase.</p>
     <p id="config-status" role="status" aria-live="polite">Cargando configuración…</p>
@@ -37,8 +34,7 @@ import AdminTabs from "../../components/AdminTabs.astro";
       </div>
     </form>
     <section class="mt-8"><h2 class="text-xl font-bold mb-3">Historial de versiones</h2><div id="history"></div><pre id="historical-config" class="hidden mt-4 p-4 bg-white rounded-xl overflow-auto text-sm" aria-label="Detalle de versión histórica"></pre></section>
-  </section>
   <script>
     import "../../lib/manufacturing-admin";
   </script>
-</Layout>
+</AdminLayout>

@@ -1,17 +1,12 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import AdminTabs from "../../components/AdminTabs.astro";
+import AdminLayout from "../../layouts/AdminLayout.astro";
 ---
 
-<Layout title="Admin — Pedidos">
-  <section class="max-w-6xl mx-auto px-4 py-10">
-    <AdminTabs />
-    <h1 class="font-display text-3xl font-extrabold mb-6">Pedidos</h1>
+<AdminLayout title="Admin — Pedidos">
+    <h1 id="admin-title" class="font-display text-3xl font-extrabold mb-6">Pedidos</h1>
     <div id="orders-table" class="space-y-4">
-      <p class="text-ink-soft">Cargando…</p>
+      <p role="status" class="text-ink-soft">Cargando pedidos…</p>
     </div>
-  </section>
-
   <script>
     import { escapeHtml, apiFetch, requireAuth } from "../../lib/api";
 
@@ -86,7 +81,11 @@ import AdminTabs from "../../components/AdminTabs.astro";
             </div>
             <p class="feedback hidden text-xs mt-2 font-semibold"></p>
           </article>`).join("")
-        : `<p class="text-ink-soft">No hay pedidos todavía. Convierte una cotización desde la pestaña Cotizaciones.</p>`;
+        : `<div class="rounded-2xl border border-brand-100 bg-white px-6 py-10 text-center">
+             <h2 class="font-display text-lg font-bold">Aún no hay pedidos</h2>
+             <p class="mt-2 text-sm text-ink-soft">Convierte una cotización en pedido para empezar.</p>
+             <a href="/admin/cotizaciones" class="mt-5 inline-flex min-h-11 items-center rounded-full bg-brand-700 px-5 text-sm font-semibold text-white hover:bg-brand-800">Ir a cotizaciones</a>
+           </div>`;
 
       container.querySelectorAll<HTMLElement>("article").forEach((card) => {
         card.querySelector(".save-btn")!.addEventListener("click", async () => {
@@ -117,7 +116,7 @@ import AdminTabs from "../../components/AdminTabs.astro";
       orders = await apiFetch<Order[]>("/api/admin/orders");
       render();
     } catch (err) {
-      container.innerHTML = `<p class="text-red-600">${escapeHtml((err as Error).message)}</p>`;
+      container.innerHTML = `<p role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">${escapeHtml((err as Error).message)}</p>`;
     }
   </script>
-</Layout>
+</AdminLayout>
