@@ -44,6 +44,38 @@ internal static class AdminUserChecks
         var users = first.Users.Concat(second.Users).ToArray();
         Check(second.NextAfterId is null && second.Users.Count > 0 && users.Select(u => u.Id).Distinct().Count() == users.Length
             && users.All(u => u.Role != "Guest") && users.Contains(created!), "pagination includes managed accounts exactly once and excludes guest sessions");
+
+        var adminId = persisted.Id;
+        var editPath = $"{path}/{adminId}";
+        var update = new UpdateUserRequest(" Nombre actualizado ", Roles.Admin, null);
+        client.DefaultRequestHeaders.Remove("X-Test-Role");
+        client.DefaultRequestHeaders.Add("X-Test-Role", Roles.Client);
+        Check((await client.PutAsJsonAsync(editPath, update)).StatusCode == HttpStatusCode.Forbidden, "client cannot edit users");
+        client.DefaultRequestHeaders.Remove("X-Test-Role");
+        client.DefaultRequestHeaders.Add("X-Test-Role", Roles.Admin);
+        Check((await client.PutAsJsonAsync(editPath, update)).StatusCode == HttpStatusCode.Forbidden, "stale admin role cannot edit users");
+        client.DefaultRequestHeaders.Add("X-Test-User", adminId.ToString());
+
+        var originalHash = persisted.PasswordHash;
+        var originalVersion = persisted.SessionVersion;
+        using var renamed = await client.PutAsJsonAsync(editPath, update);
+        Check((await renamed.Content.ReadFromJsonAsync<UserDto>()) is { Name: "Nombre actualizado" }, "admin can rename a user");
+        await db.Entry(persisted).ReloadAsync();
+        Check(persisted.PasswordHash == originalHash && persisted.SessionVersion == originalVersion, "name-only change preserves password and session");
+        Check((await client.PutAsJsonAsync(editPath, update with { Role = Roles.Client })).StatusCode == HttpStatusCode.Conflict, "last administrator cannot be demoted");
+        Check((await client.PutAsJsonAsync(editPath, update with { Password = "short" })).StatusCode == HttpStatusCode.BadRequest, "short replacement password rejected");
+
+        const string replacementPassword = "Replacement-password";
+        using var replaced = await client.PutAsJsonAsync(editPath, update with { Password = replacementPassword });
+        await db.Entry(persisted).ReloadAsync();
+        Check(replaced.IsSuccessStatusCode && persisted.PasswordHash != originalHash && persisted.PasswordHash != replacementPassword
+            && persisted.SessionVersion == originalVersion + 1, "password update replaces hash and invalidates old sessions");
+        Check((await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(request.Email, replacementPassword))).IsSuccessStatusCode, "replacement password allows login");
+        Check((await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(request.Email, request.Password))).StatusCode == HttpStatusCode.Unauthorized, "old password rejected after replacement");
+        Check((await client.PutAsJsonAsync($"{path}/1", new UpdateUserRequest("Test", Roles.Admin, null))).IsSuccessStatusCode, "client can be promoted to administrator");
+        Check((await client.PutAsJsonAsync(editPath, update with { Role = Roles.Client })).IsSuccessStatusCode, "administrator can be demoted when another remains");
+        await db.Entry(persisted).ReloadAsync();
+        Check(persisted.Role == Roles.Client && persisted.SessionVersion == originalVersion + 2, "role update invalidates old sessions");
     }
 
     private static void Check(bool condition, string name)

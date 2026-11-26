@@ -17,3 +17,8 @@ public record CreateUserRequest(
     [Required] string Role);
 
 public record UsersPage(IReadOnlyList<UserDto> Users, int? NextAfterId);
+
+public record UpdateUserRequest(
+    [Required, StringLength(120)] string Name,
+    [Required] string Role,
+    [StringLength(72)] string? Password);

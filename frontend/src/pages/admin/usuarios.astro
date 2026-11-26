@@ -47,18 +47,48 @@ import AdminTabs from "../../components/AdminTabs.astro";
             <th scope="col" class="px-4 py-3">Nombre</th>
             <th scope="col" class="px-4 py-3">Correo</th>
             <th scope="col" class="px-4 py-3">Rol</th>
+            <th scope="col" class="px-4 py-3">Acciones</th>
           </tr>
         </thead>
         <tbody id="user-rows"></tbody>
       </table>
     </div>
+    <dialog id="edit-user" class="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-brand-100 p-6 backdrop:bg-black/40" aria-labelledby="edit-title">
+      <form id="edit-user-form" method="dialog">
+        <h2 id="edit-title" class="font-display text-xl font-bold">Editar usuario</h2>
+        <p id="edit-email" class="mb-4 break-all text-sm text-ink-soft"></p>
+        <fieldset id="edit-fields" class="grid gap-4">
+          <label class="block text-sm font-semibold">
+            Nombre
+            <input name="name" required maxlength="120" class="mt-1 block w-full rounded-xl border border-brand-200 px-4 py-2.5" />
+          </label>
+          <label class="block text-sm font-semibold">
+            Rol
+            <select name="role" class="mt-1 block w-full rounded-xl border border-brand-200 px-4 py-2.5">
+              <option value="Client">Cliente</option>
+              <option value="Admin">Administrador</option>
+            </select>
+          </label>
+          <label class="block text-sm font-semibold">
+            Nueva contraseña
+            <input name="password" type="password" minlength="12" maxlength="72" autocomplete="new-password" aria-describedby="edit-password-help" class="mt-1 block w-full rounded-xl border border-brand-200 px-4 py-2.5" />
+            <span id="edit-password-help" class="mt-1 block font-normal text-ink-soft">Déjala vacía para conservar la actual. Si la cambias, usa al menos 12 caracteres.</span>
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <button type="submit" class="rounded-full bg-brand-600 px-5 py-2 text-sm font-semibold text-white">Guardar cambios</button>
+            <button type="button" id="cancel-edit-user" class="rounded-full border border-brand-200 px-5 py-2 text-sm font-semibold">Cancelar</button>
+          </div>
+        </fieldset>
+        <p id="edit-status" class="mt-3 text-sm" role="status"></p>
+      </form>
+    </dialog>
     <button id="load-users" type="button" hidden class="mt-4 rounded-full border border-brand-200 px-5 py-2 text-sm font-semibold text-brand-700 disabled:opacity-50">Cargar más</button>
   </section>
 
   <script>
-    import { apiFetch, requireAuth, type UserDto } from "../../lib/api";
+    import { apiFetch, clearSession, requireAuth, type UserDto } from "../../lib/api";
 
-    requireAuth("Admin");
+    const session = requireAuth("Admin");
 
     const form = document.querySelector<HTMLFormElement>("#create-user")!;
     const fields = document.querySelector<HTMLFieldSetElement>("#user-fields")!;
@@ -66,17 +96,79 @@ import AdminTabs from "../../components/AdminTabs.astro";
     const listStatus = document.querySelector("#list-status")!;
     const rows = document.querySelector<HTMLTableSectionElement>("#user-rows")!;
     const loadButton = document.querySelector<HTMLButtonElement>("#load-users")!;
+    const dialog = document.querySelector<HTMLDialogElement>("#edit-user")!;
+    const editForm = document.querySelector<HTMLFormElement>("#edit-user-form")!;
+    const editFields = document.querySelector<HTMLFieldSetElement>("#edit-fields")!;
+    const editEmail = document.querySelector("#edit-email")!;
+    const editStatus = document.querySelector("#edit-status")!;
+    let editing: { user: UserDto; row: HTMLTableRowElement } | null = null;
     let afterId: number | null = 0;
 
-    function appendUser(user: UserDto) {
-      const row = rows.insertRow();
+    function renderUser(user: UserDto, row = rows.insertRow()) {
+      row.replaceChildren();
       row.className = "border-t border-brand-100";
       for (const value of [user.name, user.email, user.role === "Admin" ? "Administrador" : "Cliente"]) {
         const cell = row.insertCell();
         cell.className = "px-4 py-3 break-all";
         cell.textContent = value;
       }
+      const action = row.insertCell();
+      action.className = "px-4 py-3";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "rounded-full border border-brand-200 px-4 py-1.5 font-semibold text-brand-700";
+      button.textContent = "Editar";
+      button.setAttribute("aria-label", `Editar a ${user.name}`);
+      button.addEventListener("click", () => {
+        editing = { user, row };
+        editForm.reset();
+        editForm.querySelector<HTMLInputElement>('[name="name"]')!.value = user.name;
+        editForm.querySelector<HTMLSelectElement>('[name="role"]')!.value = user.role;
+        editEmail.textContent = user.email;
+        editStatus.textContent = "";
+        dialog.showModal();
+      });
+      action.append(button);
     }
+
+    document.querySelector("#cancel-edit-user")!.addEventListener("click", () => dialog.close());
+    dialog.addEventListener("cancel", (event) => {
+      if (editFields.disabled) event.preventDefault();
+    });
+    dialog.addEventListener("close", () => {
+      editForm.reset();
+      editing = null;
+    });
+    editForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!editing || editFields.disabled) return;
+      const { user, row } = editing;
+      const data = new FormData(editForm);
+      const password = String(data.get("password") ?? "");
+      editFields.disabled = true;
+      editStatus.classList.remove("text-red-700");
+      editStatus.textContent = "Guardando cambios…";
+      try {
+        const updated = await apiFetch<UserDto>(`/api/admin/users/${user.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ name: data.get("name"), role: data.get("role"), password: password || null }),
+        });
+        if (updated.id === session.user.id && (password || updated.role !== user.role)) {
+          clearSession();
+          window.location.assign("/login");
+          return;
+        }
+        renderUser(updated, row);
+        dialog.close();
+        row.querySelector("button")?.focus();
+        listStatus.textContent = `Cambios guardados para ${updated.email}.`;
+      } catch (error) {
+        editStatus.classList.add("text-red-700");
+        editStatus.textContent = (error as Error).message;
+      } finally {
+        editFields.disabled = false;
+      }
+    });
 
     async function loadUsers() {
       if (afterId === null || loadButton.disabled) return;
@@ -85,7 +177,7 @@ import AdminTabs from "../../components/AdminTabs.astro";
       listStatus.textContent = "Cargando usuarios…";
       try {
         const page = await apiFetch<{ users: UserDto[]; nextAfterId: number | null }>(`/api/admin/users?afterId=${afterId}`);
-        page.users.forEach(appendUser);
+        page.users.forEach((user) => renderUser(user));
         afterId = page.nextAfterId;
         loadButton.hidden = afterId === null;
         loadButton.textContent = "Cargar más";
@@ -112,7 +204,7 @@ import AdminTabs from "../../components/AdminTabs.astro";
       try {
         const user = await apiFetch<UserDto>("/api/admin/users", { method: "POST", body });
         form.reset();
-        if (afterId === null) appendUser(user);
+        if (afterId === null) renderUser(user);
         createStatus.textContent = `Cuenta creada para ${user.email}.`;
       } catch (error) {
         createStatus.classList.add("text-red-700");

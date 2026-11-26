@@ -19,4 +19,8 @@ public class AdminUsersController(AuthService service) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateUserRequest request) =>
         (await service.CreateUser(request)).ToHttp(this);
+
+    [HttpPut("{id:int:min(1)}")]
+    public async Task<IActionResult> Update(int id, UpdateUserRequest request) =>
+        (await service.UpdateUser(id, request)).ToHttp(this);
 }

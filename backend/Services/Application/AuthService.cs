@@ -9,6 +9,54 @@ public class AuthService(AppDbContext db, ITokenIssuer tokens, IPasswordHasher p
 {
     private const int UsersPageSize = 25;
 
+    public async Task<AppResult> UpdateUser(int id, UpdateUserRequest request)
+    {
+        if (!actor.IsAdmin) return new(AppOutcome.Forbidden);
+        if (string.IsNullOrWhiteSpace(request.Name) || request.Role is not (Roles.Admin or Roles.Client))
+            return AppResult.Invalid(new { message = "Ingresa un nombre y selecciona un rol válido." });
+
+        var password = request.Password;
+        var changePassword = !string.IsNullOrEmpty(password);
+        if (changePassword && (string.IsNullOrWhiteSpace(password) || password!.Length < 12 || Encoding.UTF8.GetByteCount(password) > 72))
+            return AppResult.Invalid(new { message = "La contraseña debe tener al menos 12 caracteres y hasta 72 bytes." });
+
+        var hash = changePassword ? passwords.Hash(password!) : null;
+        try
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            if (!await db.Users.AnyAsync(u => u.Id == actor.Id && u.Role == Roles.Admin))
+                return new(AppOutcome.Forbidden);
+
+            var user = await db.Users.SingleOrDefaultAsync(u => u.Id == id && (u.Role == Roles.Admin || u.Role == Roles.Client));
+            if (user is null) return AppResult.NotFound();
+
+            var roleChanged = user.Role != request.Role;
+            if (roleChanged && user.Role == Roles.Admin &&
+                !await db.Users.AnyAsync(u => u.Role == Roles.Admin && u.Id != id))
+                return AppResult.Conflict(new { message = "Debe quedar al menos una cuenta administradora." });
+
+            user.Name = request.Name.Trim();
+            user.Role = request.Role;
+            if (hash is not null) user.PasswordHash = hash;
+            if (roleChanged || changePassword) user.SessionVersion++;
+
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return AppResult.Ok(new UserDto(user.Id, user.Name, user.Email, user.Role));
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "40001" })
+        {
+            return ConcurrentUserChange();
+        }
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "40001")
+        {
+            return ConcurrentUserChange();
+        }
+    }
+
+    private static AppResult ConcurrentUserChange() =>
+        AppResult.Conflict(new { message = "Hubo otro cambio al mismo tiempo. Vuelve a cargar la página e inténtalo de nuevo." });
+
     public async Task<AppResult> ListUsers(int afterId)
     {
         if (!actor.IsAdmin) return new(AppOutcome.Forbidden);
