@@ -9,3 +9,11 @@ public record LoginRequest([Required, EmailAddress, StringLength(254)] string Em
 public record AuthResponse(string Token, UserDto User);
 
 public record UserDto(int Id, string Name, string Email, string Role);
+
+public record CreateUserRequest(
+    [Required, StringLength(120)] string Name,
+    [Required, EmailAddress, StringLength(254)] string Email,
+    [Required, StringLength(72, MinimumLength = 12)] string Password,
+    [Required] string Role);
+
+public record UsersPage(IReadOnlyList<UserDto> Users, int? NextAfterId);

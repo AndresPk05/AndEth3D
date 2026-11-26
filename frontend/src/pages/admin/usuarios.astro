@@ -1,0 +1,128 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import AdminTabs from "../../components/AdminTabs.astro";
+---
+
+<Layout title="Admin - Usuarios">
+  <section class="max-w-6xl mx-auto px-4 py-10">
+    <AdminTabs />
+    <h1 class="font-display text-3xl font-extrabold mb-6">Usuarios</h1>
+
+    <form id="create-user" method="post" class="bg-white rounded-2xl border border-brand-100 p-6 mb-8">
+      <h2 class="font-display font-bold mb-4">Agregar usuario</h2>
+      <fieldset id="user-fields" disabled class="grid sm:grid-cols-2 gap-4">
+        <label class="block text-sm font-semibold">
+          Nombre
+          <input name="name" required maxlength="120" autocomplete="off" class="block w-full mt-1 rounded-xl border border-brand-200 px-4 py-2.5" />
+        </label>
+        <label class="block text-sm font-semibold">
+          Correo electrónico
+          <input name="email" type="email" required maxlength="254" autocomplete="off" class="block w-full mt-1 rounded-xl border border-brand-200 px-4 py-2.5" />
+        </label>
+        <label class="block text-sm font-semibold">
+          Contraseña inicial
+          <input name="password" type="password" required minlength="12" maxlength="72" autocomplete="new-password" aria-describedby="password-help" class="block w-full mt-1 rounded-xl border border-brand-200 px-4 py-2.5" />
+          <span id="password-help" class="block mt-1 font-normal text-ink-soft">Mínimo 12 caracteres.</span>
+        </label>
+        <label class="block text-sm font-semibold">
+          Rol
+          <select name="role" class="block w-full mt-1 rounded-xl border border-brand-200 px-4 py-2.5">
+            <option value="Client">Cliente</option>
+            <option value="Admin">Administrador</option>
+          </select>
+        </label>
+        <div>
+          <button type="submit" class="rounded-full bg-brand-600 px-6 py-2.5 text-white font-semibold disabled:opacity-50">Crear usuario</button>
+        </div>
+      </fieldset>
+      <p id="create-status" role="status" class="mt-3 text-sm"></p>
+    </form>
+
+    <h2 class="font-display font-bold mb-3">Usuarios registrados</h2>
+    <p id="list-status" role="status" class="mb-3 text-sm text-ink-soft">Cargando usuarios…</p>
+    <div class="overflow-x-auto rounded-xl border border-brand-100 bg-white">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-brand-50">
+          <tr>
+            <th scope="col" class="px-4 py-3">Nombre</th>
+            <th scope="col" class="px-4 py-3">Correo</th>
+            <th scope="col" class="px-4 py-3">Rol</th>
+          </tr>
+        </thead>
+        <tbody id="user-rows"></tbody>
+      </table>
+    </div>
+    <button id="load-users" type="button" hidden class="mt-4 rounded-full border border-brand-200 px-5 py-2 text-sm font-semibold text-brand-700 disabled:opacity-50">Cargar más</button>
+  </section>
+
+  <script>
+    import { apiFetch, requireAuth, type UserDto } from "../../lib/api";
+
+    requireAuth("Admin");
+
+    const form = document.querySelector<HTMLFormElement>("#create-user")!;
+    const fields = document.querySelector<HTMLFieldSetElement>("#user-fields")!;
+    const createStatus = document.querySelector("#create-status")!;
+    const listStatus = document.querySelector("#list-status")!;
+    const rows = document.querySelector<HTMLTableSectionElement>("#user-rows")!;
+    const loadButton = document.querySelector<HTMLButtonElement>("#load-users")!;
+    let afterId: number | null = 0;
+
+    function appendUser(user: UserDto) {
+      const row = rows.insertRow();
+      row.className = "border-t border-brand-100";
+      for (const value of [user.name, user.email, user.role === "Admin" ? "Administrador" : "Cliente"]) {
+        const cell = row.insertCell();
+        cell.className = "px-4 py-3 break-all";
+        cell.textContent = value;
+      }
+    }
+
+    async function loadUsers() {
+      if (afterId === null || loadButton.disabled) return;
+      loadButton.disabled = true;
+      fields.disabled = true;
+      listStatus.textContent = "Cargando usuarios…";
+      try {
+        const page = await apiFetch<{ users: UserDto[]; nextAfterId: number | null }>(`/api/admin/users?afterId=${afterId}`);
+        page.users.forEach(appendUser);
+        afterId = page.nextAfterId;
+        loadButton.hidden = afterId === null;
+        loadButton.textContent = "Cargar más";
+        listStatus.textContent = rows.rows.length ? "" : "No hay usuarios registrados.";
+        fields.disabled = false;
+      } catch (error) {
+        listStatus.textContent = (error as Error).message;
+        loadButton.textContent = "Reintentar";
+        loadButton.hidden = false;
+      } finally {
+        loadButton.disabled = false;
+      }
+    }
+
+    loadButton.addEventListener("click", loadUsers);
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (fields.disabled) return;
+      const body = JSON.stringify(Object.fromEntries(new FormData(form)));
+      fields.disabled = true;
+      loadButton.disabled = true;
+      createStatus.className = "mt-3 text-sm";
+      createStatus.textContent = "Creando usuario…";
+      try {
+        const user = await apiFetch<UserDto>("/api/admin/users", { method: "POST", body });
+        form.reset();
+        if (afterId === null) appendUser(user);
+        createStatus.textContent = `Cuenta creada para ${user.email}.`;
+      } catch (error) {
+        createStatus.classList.add("text-red-700");
+        createStatus.textContent = (error as Error).message;
+      } finally {
+        fields.disabled = false;
+        loadButton.disabled = false;
+      }
+    });
+
+    void loadUsers();
+  </script>
+</Layout>
